@@ -4,12 +4,16 @@ import svgr from 'vite-plugin-svgr';
 import eslint from 'vite-plugin-eslint';
 import { VitePWA } from 'vite-plugin-pwa';
 import { ManifestPlugin, RobotsTxtPlugin, SitemapPlugin } from './vite-plugins';
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '')
 	return {
 		base: '/',
 		plugins: [
+			nodePolyfills({
+				include: ["crypto"],
+			}),
 			react(),
 			svgr(),
 			eslint(),
@@ -23,7 +27,7 @@ export default defineConfig(({ mode }) => {
 				strategies: 'injectManifest', // Uses `src/service-worker.js` for caching
 				manifest: false, // Vite will use `public/manifest.json` automatically
 				injectManifest: {
-					maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+					maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
 				},
 			}),
 
