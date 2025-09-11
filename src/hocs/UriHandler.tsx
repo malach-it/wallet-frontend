@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
+import { Core } from "@wwwallet-private/client-core";
 import { useLocation } from "react-router-dom";
 import checkForUpdates from "../offlineUpdateSW";
 import StatusContext from "../context/StatusContext";
@@ -125,13 +126,11 @@ export const UriHandler = ({ children }) => {
 			return;
 		}
 
-		async function handle(urlToCheck: string) {
-			const u = new URL(urlToCheck);
-			if (u.searchParams.size === 0) return;
-			// setUrl(window.location.origin);
-			console.log('[Uri Handler]: check', url);
+		const core = new Core({});
 
-			if (u.protocol === 'openid-credential-offer' || u.searchParams.get('credential_offer') || u.searchParams.get('credential_offer_uri')) {
+		const credentialOfferHandler = function () {
+				const u = new URL(window.location.toString())
+
 				handleCredentialOffer(u.toString()).then(({ credentialIssuer, selectedCredentialConfigurationId, issuer_state }) => {
 					console.log("Generating authorization request...");
 					return generateAuthorizationRequest(credentialIssuer, selectedCredentialConfigurationId, issuer_state);
@@ -145,19 +144,10 @@ export const UriHandler = ({ children }) => {
 						console.error(err);
 					})
 				return;
-			}
-			else if (u.searchParams.get('code') && !usedAuthorizationCodes.includes(u.searchParams.get('code'))) {
-				setUsedAuthorizationCodes((codes) => [...codes, u.searchParams.get('code')]);
+		}
 
-				console.log("Handling authorization response...");
-				handleAuthorizationResponse(u.toString()).then(() => {
-				}).catch(err => {
-					console.log("Error during the handling of authorization response")
-					window.history.replaceState({}, '', `${window.location.pathname}`);
-					console.error(err)
-				})
-			}
-			else if (u.searchParams.get('client_id') && u.searchParams.get('request_uri') && !usedRequestUris.includes(u.searchParams.get('request_uri'))) {
+		const presentationHandler = async function () {
+				const u = new URL(window.location.toString())
 				setUsedRequestUris((uriArray) => [...uriArray, u.searchParams.get('request_uri')]);
 				await openID4VP.handleAuthorizationRequest(u.toString(), vcEntityList).then((result) => {
 					console.log("Result = ", result);
@@ -195,8 +185,23 @@ export const UriHandler = ({ children }) => {
 					console.error(err);
 				})
 				return;
-			}
+		}
 
+		const presentationSuccessHandler = function () {
+				const u = new URL(window.location.toString())
+
+				setUsedAuthorizationCodes((codes) => [...codes, u.searchParams.get('code')]);
+
+				console.log("Handling authorization response...");
+				handleAuthorizationResponse(u.toString()).then(() => {
+				}).catch(err => {
+					console.log("Error during the handling of authorization response")
+					window.history.replaceState({}, '', `${window.location.pathname}`);
+					console.error(err)
+				})
+		}
+
+		const errorHandler = function () {
 			const urlParams = new URLSearchParams(window.location.search);
 			const state = urlParams.get('state');
 			const error = urlParams.get('error');
@@ -208,7 +213,37 @@ export const UriHandler = ({ children }) => {
 				setMessagePopup(true);
 			}
 		}
-		handle(url);
+
+		const stepHandlers = {
+			"pushed_authorization_request": credentialOfferHandler,
+			"presentation": presentationHandler,
+			"presentation_success": presentationSuccessHandler,
+			"protocol_error": errorHandler,
+		}
+
+		core.location(window.location).then(presentationRequest => {
+			if (presentationRequest.protocol) {
+				// @ts-expect-error
+				stepHandlers[presentationRequest.nextStep]()
+			}
+		})
+
+
+		// async function handle(urlToCheck: string) {
+		// 	const u = new URL(urlToCheck);
+		// 	if (u.searchParams.size === 0) return;
+		// 	// setUrl(window.location.origin);
+		// 	console.log('[Uri Handler]: check', url);
+
+		// 	if (u.protocol === 'openid-credential-offer' || u.searchParams.get('credential_offer') || u.searchParams.get('credential_offer_uri')) {
+		// 	}
+		// 	else if (u.searchParams.get('code') && !usedAuthorizationCodes.includes(u.searchParams.get('code'))) {
+		// 	}
+		// 	else if (u.searchParams.get('client_id') && u.searchParams.get('request_uri') && !usedRequestUris.includes(u.searchParams.get('request_uri'))) {
+		// 	}
+
+		// }
+		// handle(url);
 	}, [url, t, isLoggedIn, setRedirectUri, vcEntityList, synced]);
 
 	useEffect(() => {
