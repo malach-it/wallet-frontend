@@ -12,6 +12,8 @@ import CredentialsContext from "@/context/CredentialsContext";
 import { CachedUser } from "@/services/LocalStorageKeystore";
 import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
+import { useOpenID4VCIHelper } from "@/lib/services/OpenID4VCIHelper";
+import { useCoreHttpProxy } from "@/lib/services/HttpProxy/CoreHttpProxy";
 
 const MessagePopup = React.lazy(() => import('../components/Popups/MessagePopup'));
 const PinInputPopup = React.lazy(() => import('../components/Popups/PinInput'));
@@ -31,6 +33,8 @@ export const UriHandler = ({ children }) => {
 
 	const { openID4VCI } = useContext(OpenID4VCIContext);
 	const { openID4VP } = useContext(OpenID4VPContext);
+	const openID4VCIHelper = useOpenID4VCIHelper();
+	const coreHttpProxy = useCoreHttpProxy()
 
 	const { handleCredentialOffer, generateAuthorizationRequest, handleAuthorizationResponse } = openID4VCI;
 	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
@@ -126,28 +130,60 @@ export const UriHandler = ({ children }) => {
 			return;
 		}
 
-		const core = new Core({});
+		const core = new Core({
+			wallet_url: 'http://localhost:3000/cb',
+			httpClient: coreHttpProxy,
+		});
 
-		const credentialOfferHandler = function () {
-				const u = new URL(window.location.toString())
+		const credentialOfferHandler = async function () {
+				const u = new URL(url)
 
-				handleCredentialOffer(u.toString()).then(({ credentialIssuer, selectedCredentialConfigurationId, issuer_state }) => {
-					console.log("Generating authorization request...");
-					return generateAuthorizationRequest(credentialIssuer, selectedCredentialConfigurationId, issuer_state);
-				}).then((res) => {
-					if ('url' in res && res.url) {
-						window.location.href = res.url;
+				try {
+					const { credentialIssuer, selectedCredentialConfigurationId, issuer_state } = await handleCredentialOffer(u.toString());
+
+					const { client_id } = await openID4VCIHelper.getClientId(credentialIssuer)
+					const { authzServeMetadata } = await openID4VCIHelper.getAuthorizationServerMetadata(credentialIssuer)
+					const { metadata } = await openID4VCIHelper.getCredentialIssuerMetadata(credentialIssuer);
+
+					core.config.static_clients = [{
+						issuer: authzServeMetadata.issuer,
+						client_id: client_id,
+						pushed_authorization_request_endpoint: authzServeMetadata.pushed_authorization_request_endpoint,
+						authorize_endpoint: authzServeMetadata.authorization_endpoint,
+						scope: metadata.credential_configurations_supported[selectedCredentialConfigurationId].scope
+					}];
+
+					const { protocol, nextStep, data } = await core.pushedAuthorizationRequest({
+						issuer: credentialIssuer,
+						issuer_state: issuer_state ?? 'issuer_state',
+					});
+
+					if (data.authorize_url) {
+						window.location.href = data.authorize_url
 					}
-				})
-					.catch(err => {
-						window.history.replaceState({}, '', `${window.location.pathname}`);
+				} catch (err) {
+						// window.history.replaceState({}, '', `${window.location.pathname}`);
 						console.error(err);
-					})
-				return;
+				}
+
+				// handleCredentialOffer(u.toString()).then(({ credentialIssuer, selectedCredentialConfigurationId, issuer_state }) => {
+				// 	console.log("Generating authorization request...");
+					// return generateAuthorizationRequest(credentialIssuer, selectedCredentialConfigurationId, issuer_state);
+				// }).then((res) => {
+				// 	if ('url' in res && res.url) {
+				// 		// window.location.href = res.url;
+				// 		alert(res.url)
+				// 	}
+				// })
+				// 	.catch(err => {
+				// 		window.history.replaceState({}, '', `${window.location.pathname}`);
+				// 		console.error(err);
+				// 	})
+				// return;
 		}
 
 		const presentationHandler = async function () {
-				const u = new URL(window.location.toString())
+				const u = new URL(url)
 				setUsedRequestUris((uriArray) => [...uriArray, u.searchParams.get('request_uri')]);
 				await openID4VP.handleAuthorizationRequest(u.toString(), vcEntityList).then((result) => {
 					console.log("Result = ", result);
@@ -188,7 +224,7 @@ export const UriHandler = ({ children }) => {
 		}
 
 		const presentationSuccessHandler = function () {
-				const u = new URL(window.location.toString())
+				const u = new URL(url)
 
 				setUsedAuthorizationCodes((codes) => [...codes, u.searchParams.get('code')]);
 
