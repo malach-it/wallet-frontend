@@ -2958,10 +2958,10 @@
   resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.5.13.tgz#87b309a6379c22b926e696893237826f64339b6f"
   integrity sha512-/hnE/qP5ZoGpol0a5mDi45bOd7t3tjYJBjsgCsivow7D48cJeV5l05RD82lPqi7gRiphZM37rnhW1l6ZoCNNnQ==
 
-"@wwwallet-private/client-core@^0.1.0-alpha.2":
-  version "0.1.0-alpha.2"
-  resolved "https://npm.diad.nu/@wwwallet-private/client-core/-/client-core-0.1.0-alpha.2.tgz#ecd52227a084bc0c54a41f4d09f49dab52dceaa1"
-  integrity sha512-BpNZqh0zAs9P4oHC4aVzQEzl21ykLuq3ZGQ7Fa5BkxXdHtSE4/JejkuOd8fZUMEH98Cq3Ov9pFMfksDTWbqEaw==
+"@wwwallet-private/client-core@^0.1.0-alpha.3":
+  version "0.1.0-alpha.3"
+  resolved "https://npm.diad.nu/@wwwallet-private/client-core/-/client-core-0.1.0-alpha.3.tgz#f73cc678d65a638831e014ce73a27c97e0fe59db"
+  integrity sha512-UCxsK2NcU/QXzsq74wioMoiaBjBCgXc4GCTgOWGr/d2pR61vHM4esblvouYjZmWzi0uQ5WR27wc7WhUf2TOEtA==
   dependencies:
     "@types/web" "^0.0.265"
     ajv "^8.17.1"
