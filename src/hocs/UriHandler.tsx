@@ -14,6 +14,7 @@ import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
 import { useOpenID4VCIHelper } from "@/lib/services/OpenID4VCIHelper";
 import { useCoreHttpProxy } from "@/lib/services/HttpProxy/CoreHttpProxy";
+import { OPENID4VCI_REDIRECT_URI } from "@/config";
 
 const MessagePopup = React.lazy(() => import('../components/Popups/MessagePopup'));
 const PinInputPopup = React.lazy(() => import('../components/Popups/PinInput'));
@@ -131,7 +132,7 @@ export const UriHandler = ({ children }) => {
 		}
 
 		const core = new Core({
-			wallet_url: 'http://localhost:3000/cb',
+			wallet_url: OPENID4VCI_REDIRECT_URI,
 			httpClient: coreHttpProxy,
 		});
 
