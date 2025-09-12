@@ -1,4 +1,4 @@
-import { useHttpProxy } from "./HttpProxy";
+import { useHttpProxy } from "../HttpProxy/HttpProxy";
 
 export function useCoreHttpProxy() {
 	const httpProxy = useHttpProxy();

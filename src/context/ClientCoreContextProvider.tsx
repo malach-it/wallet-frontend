@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import ClientCoreContext from './ClientCoreContext';
 import { Core } from '@wwwallet-private/client-core';
-import { useCoreHttpProxy } from '@/lib/services/HttpProxy/CoreHttpProxy';
+import { useCoreHttpProxy } from '@/lib/services/CoreWrappers/CoreHttpProxy';
 import { OPENID4VCI_REDIRECT_URI } from '@/config';
 
 type ClientCoreContextProviderProps = {
