@@ -34,13 +34,13 @@ export function credentialOfferHandlerFactory(config: CredentialOfferHandlerFact
 				scope: metadata.credential_configurations_supported[credential_configuration_ids[0]].scope
 			}];
 
-			const { protocol, nextStep, data: { authorize_url } } = await core.pushedAuthorizationRequest({
+			const { protocol, nextStep, data } = await core.pushedAuthorizationRequest({
 				issuer: credentialIssuer,
 				issuer_state: issuer_state ?? 'issuer_state',
 			});
 
-			if (authorize_url) {
-				this[nextStep]({ authorize_url })
+			if (data.authorize_url) {
+				this[nextStep](data)
 			}
 		} catch (err) {
 				// window.history.replaceState({}, '', `${window.location.pathname}`);
