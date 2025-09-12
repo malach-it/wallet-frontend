@@ -150,7 +150,7 @@ export const UriHandler = ({ children }) => {
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
 				// @ts-expect-error
-				stepHandlers[presentationRequest.nextStep](presentationRequest)
+				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
 			}
 		})
 
