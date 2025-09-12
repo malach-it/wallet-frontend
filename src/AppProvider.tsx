@@ -17,12 +17,12 @@ const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 		<ClientCoreContextProvider>
 			<StatusContextProvider>
 				<SessionContextProvider>
-						<CredentialsContextProvider>
-							<OpenID4VPContextProvider>
-								<OpenID4VCIContextProvider>
-									<UriHandler>
-										{children}
-									</UriHandler>
+					<CredentialsContextProvider>
+						<OpenID4VPContextProvider>
+							<OpenID4VCIContextProvider>
+								<UriHandler>
+									{children}
+								</UriHandler>
 							</OpenID4VCIContextProvider>
 						</OpenID4VPContextProvider>
 					</CredentialsContextProvider>
