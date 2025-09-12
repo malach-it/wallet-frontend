@@ -10,31 +10,37 @@ export type CredentialOfferHandlerFactoryConfig = {
 	openID4VCIHelper: IOpenID4VCIHelper;
 }
 
+type PushedAuthorizationRequestMetadata = {
+  credential_configuration_ids: string[];
+  issuer_state?: string | undefined;
+};
+
 export function credentialOfferHandlerFactory(config: CredentialOfferHandlerFactoryConfig): HandlerFactoryResponse {
 	const { core, url, openID4VCI, openID4VCIHelper } = config;
 
-	return async function credentialOfferHandler({}) {
+	return async function credentialOfferHandler({ credential_configuration_ids, issuer_state}: PushedAuthorizationRequestMetadata) {
 
 		try {
-			const { credentialIssuer, selectedCredentialConfigurationId, issuer_state } = await openID4VCI.handleCredentialOffer(url);
+			const { credentialIssuer } = await openID4VCI.handleCredentialOffer(url);
 
 			const { client_id } = await openID4VCIHelper.getClientId(credentialIssuer)
 			const { authzServeMetadata } = await openID4VCIHelper.getAuthorizationServerMetadata(credentialIssuer)
 			const { metadata } = await openID4VCIHelper.getCredentialIssuerMetadata(credentialIssuer);
 
+
 			core.config.static_clients = [{
 				issuer: authzServeMetadata.issuer,
 				client_id: client_id,
-				scope: metadata.credential_configurations_supported[selectedCredentialConfigurationId].scope
+				scope: metadata.credential_configurations_supported[credential_configuration_ids[0]].scope
 			}];
 
-			const { protocol, nextStep, data } = await core.pushedAuthorizationRequest({
+			const { protocol, nextStep, data: { authorize_url } } = await core.pushedAuthorizationRequest({
 				issuer: credentialIssuer,
 				issuer_state: issuer_state ?? 'issuer_state',
 			});
 
-			if (data.authorize_url) {
-				this[nextStep](data)
+			if (authorize_url) {
+				this[nextStep]({ authorize_url })
 			}
 		} catch (err) {
 				// window.history.replaceState({}, '', `${window.location.pathname}`);
