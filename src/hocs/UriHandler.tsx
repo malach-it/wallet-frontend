@@ -13,8 +13,7 @@ import { CachedUser } from "@/services/LocalStorageKeystore";
 import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
 import { useOpenID4VCIHelper } from "@/lib/services/OpenID4VCIHelper";
-import { useCoreHttpProxy } from "@/lib/services/HttpProxy/CoreHttpProxy";
-import { OPENID4VCI_REDIRECT_URI } from "@/config";
+import useClientCore from "@/hooks/useClientCore";
 
 const MessagePopup = React.lazy(() => import('../components/Popups/MessagePopup'));
 const PinInputPopup = React.lazy(() => import('../components/Popups/PinInput'));
@@ -35,7 +34,7 @@ export const UriHandler = ({ children }) => {
 	const { openID4VCI } = useContext(OpenID4VCIContext);
 	const { openID4VP } = useContext(OpenID4VPContext);
 	const openID4VCIHelper = useOpenID4VCIHelper();
-	const coreHttpProxy = useCoreHttpProxy()
+	const core = useClientCore();
 
 	const { handleCredentialOffer, generateAuthorizationRequest, handleAuthorizationResponse } = openID4VCI;
 	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
@@ -131,11 +130,6 @@ export const UriHandler = ({ children }) => {
 			return;
 		}
 
-		const core = new Core({
-			wallet_url: OPENID4VCI_REDIRECT_URI,
-			httpClient: coreHttpProxy,
-		});
-
 		const credentialOfferHandler = async function () {
 				const u = new URL(url)
 
@@ -149,8 +143,6 @@ export const UriHandler = ({ children }) => {
 					core.config.static_clients = [{
 						issuer: authzServeMetadata.issuer,
 						client_id: client_id,
-						pushed_authorization_request_endpoint: authzServeMetadata.pushed_authorization_request_endpoint,
-						authorize_endpoint: authzServeMetadata.authorization_endpoint,
 						scope: metadata.credential_configurations_supported[selectedCredentialConfigurationId].scope
 					}];
 

@@ -6,6 +6,7 @@ import { CredentialsContextProvider } from './context/CredentialsContextProvider
 import { OpenID4VPContextProvider } from './context/OpenID4VPContextProvider';
 import { OpenID4VCIContextProvider } from './context/OpenID4VCIContextProvider';
 import UriHandler from './hocs/UriHandler';
+import { ClientCoreContextProvider } from './context/ClientCoreContextProvider';
 
 type RootProviderProps = {
 	children: ReactNode;
@@ -13,19 +14,21 @@ type RootProviderProps = {
 
 const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 	return (
-		<StatusContextProvider>
-			<SessionContextProvider>
-					<CredentialsContextProvider>
-						<OpenID4VPContextProvider>
-							<OpenID4VCIContextProvider>
-								<UriHandler>
-									{children}
-								</UriHandler>
+		<ClientCoreContextProvider>
+			<StatusContextProvider>
+				<SessionContextProvider>
+						<CredentialsContextProvider>
+							<OpenID4VPContextProvider>
+								<OpenID4VCIContextProvider>
+									<UriHandler>
+										{children}
+									</UriHandler>
 							</OpenID4VCIContextProvider>
 						</OpenID4VPContextProvider>
 					</CredentialsContextProvider>
-			</SessionContextProvider>
-		</StatusContextProvider>
+				</SessionContextProvider>
+			</StatusContextProvider>
+		</ClientCoreContextProvider>
 	);
 };
 
