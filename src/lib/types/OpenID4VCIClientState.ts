@@ -2,6 +2,7 @@ import { JWK } from "jose";
 
 /**
  * serializable
+ * @deprecated
  */
 export class OpenID4VCIClientState {
 
