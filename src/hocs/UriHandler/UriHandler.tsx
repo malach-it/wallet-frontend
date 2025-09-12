@@ -1,22 +1,24 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { Core } from "@wwwallet-private/client-core";
 import { useLocation } from "react-router-dom";
-import checkForUpdates from "../offlineUpdateSW";
-import StatusContext from "../context/StatusContext";
-import SessionContext from "../context/SessionContext";
+import checkForUpdates from "../../offlineUpdateSW";
+import StatusContext from "../../context/StatusContext";
+import SessionContext from "../../context/SessionContext";
 import { useTranslation } from "react-i18next";
-import { HandleAuthorizationRequestError } from "../lib/interfaces/IOpenID4VP";
-import OpenID4VCIContext from "../context/OpenID4VCIContext";
-import OpenID4VPContext from "../context/OpenID4VPContext";
+import { HandleAuthorizationRequestError } from "../../lib/interfaces/IOpenID4VP";
+import OpenID4VCIContext from "../../context/OpenID4VCIContext";
+import OpenID4VPContext from "../../context/OpenID4VPContext";
 import CredentialsContext from "@/context/CredentialsContext";
 import { CachedUser } from "@/services/LocalStorageKeystore";
 import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
 import { useOpenID4VCIHelper } from "@/lib/services/OpenID4VCIHelper";
 import useClientCore from "@/hooks/useClientCore";
+import { authorizeHandlerFactory, credentialOfferHandlerFactory, errorHandlerFactory, presentationHandlerFactory, presentationSuccessHandlerFactory } from "./handlers";
+import { type StepHandlers } from "./resources";
 
-const MessagePopup = React.lazy(() => import('../components/Popups/MessagePopup'));
-const PinInputPopup = React.lazy(() => import('../components/Popups/PinInput'));
+const MessagePopup = React.lazy(() => import('../../components/Popups/MessagePopup'));
+const PinInputPopup = React.lazy(() => import('../../components/Popups/PinInput'));
 
 export const UriHandler = ({ children }) => {
 	const { updateOnlineStatus, isOnline } = useContext(StatusContext);
@@ -130,130 +132,25 @@ export const UriHandler = ({ children }) => {
 			return;
 		}
 
-		const credentialOfferHandler = async function () {
-				const u = new URL(url)
-
-				try {
-					const { credentialIssuer, selectedCredentialConfigurationId, issuer_state } = await handleCredentialOffer(u.toString());
-
-					const { client_id } = await openID4VCIHelper.getClientId(credentialIssuer)
-					const { authzServeMetadata } = await openID4VCIHelper.getAuthorizationServerMetadata(credentialIssuer)
-					const { metadata } = await openID4VCIHelper.getCredentialIssuerMetadata(credentialIssuer);
-
-					core.config.static_clients = [{
-						issuer: authzServeMetadata.issuer,
-						client_id: client_id,
-						scope: metadata.credential_configurations_supported[selectedCredentialConfigurationId].scope
-					}];
-
-					const { protocol, nextStep, data } = await core.pushedAuthorizationRequest({
-						issuer: credentialIssuer,
-						issuer_state: issuer_state ?? 'issuer_state',
-					});
-
-					if (data.authorize_url) {
-						window.location.href = data.authorize_url
-					}
-				} catch (err) {
-						// window.history.replaceState({}, '', `${window.location.pathname}`);
-						console.error(err);
-				}
-
-				// handleCredentialOffer(u.toString()).then(({ credentialIssuer, selectedCredentialConfigurationId, issuer_state }) => {
-				// 	console.log("Generating authorization request...");
-					// return generateAuthorizationRequest(credentialIssuer, selectedCredentialConfigurationId, issuer_state);
-				// }).then((res) => {
-				// 	if ('url' in res && res.url) {
-				// 		// window.location.href = res.url;
-				// 		alert(res.url)
-				// 	}
-				// })
-				// 	.catch(err => {
-				// 		window.history.replaceState({}, '', `${window.location.pathname}`);
-				// 		console.error(err);
-				// 	})
-				// return;
+		const stepHandlers: StepHandlers = {
+			"pushed_authorization_request": credentialOfferHandlerFactory({ core, url, openID4VCI, openID4VCIHelper }),
+			"authorize": authorizeHandlerFactory({}),
+			"presentation": presentationHandlerFactory({ core, url, openID4VP, vcEntityList, t, setUsedRequestUris, setMessagePopup, setTypeMessagePopup, setTextMessagePopup, setRedirectUri}),
+			"presentation_success": presentationSuccessHandlerFactory({ url, openID4VCI, setUsedAuthorizationCodes }),
+			"protocol_error": errorHandlerFactory({ url, isLoggedIn, setMessagePopup, setTypeMessagePopup, setTextMessagePopup}),
 		}
 
-		const presentationHandler = async function () {
-				const u = new URL(url)
-				setUsedRequestUris((uriArray) => [...uriArray, u.searchParams.get('request_uri')]);
-				await openID4VP.handleAuthorizationRequest(u.toString(), vcEntityList).then((result) => {
-					console.log("Result = ", result);
-					if ('error' in result) {
-						if (result.error === HandleAuthorizationRequestError.INSUFFICIENT_CREDENTIALS) {
-							setTextMessagePopup({ title: `${t('messagePopup.insufficientCredentials.title')}`, description: `${t('messagePopup.insufficientCredentials.description')}` });
-							setTypeMessagePopup('error');
-							setMessagePopup(true);
-						}
-						else if (result.error === HandleAuthorizationRequestError.NONTRUSTED_VERIFIER) {
-							setTextMessagePopup({ title: `${t('messagePopup.nonTrustedVerifier.title')}`, description: `${t('messagePopup.nonTrustedVerifier.description')}` });
-							setTypeMessagePopup('error');
-							setMessagePopup(true);
-						}
-						return;
-					}
-					const { conformantCredentialsMap, verifierDomainName, verifierPurpose } = result;
-					const jsonedMap = Object.fromEntries(conformantCredentialsMap);
-					console.log("Prompting for selection..")
-					return openID4VP.promptForCredentialSelection(jsonedMap, verifierDomainName, verifierPurpose);
-				}).then((selection) => {
-					if (!(selection instanceof Map)) {
-						return;
-					}
-					console.log("Selection = ", selection);
-					return openID4VP.sendAuthorizationResponse(selection, vcEntityList);
-
-				}).then((res) => {
-					if (res && 'url' in res && res.url) {
-						setRedirectUri(res.url);
-					}
-				}).catch(err => {
-					console.log("Failed to handle authorization req");
-					window.history.replaceState({}, '', `${window.location.pathname}`);
-					console.error(err);
-				})
-				return;
-		}
-
-		const presentationSuccessHandler = function () {
-				const u = new URL(url)
-
-				setUsedAuthorizationCodes((codes) => [...codes, u.searchParams.get('code')]);
-
-				console.log("Handling authorization response...");
-				handleAuthorizationResponse(u.toString()).then(() => {
-				}).catch(err => {
-					console.log("Error during the handling of authorization response")
-					window.history.replaceState({}, '', `${window.location.pathname}`);
-					console.error(err)
-				})
-		}
-
-		const errorHandler = function () {
-			const urlParams = new URLSearchParams(window.location.search);
-			const state = urlParams.get('state');
-			const error = urlParams.get('error');
-			if (url && isLoggedIn && state && error) {
-				window.history.replaceState({}, '', `${window.location.pathname}`);
-				const errorDescription = urlParams.get('error_description');
-				setTextMessagePopup({ title: error, description: errorDescription });
-				setTypeMessagePopup('error');
-				setMessagePopup(true);
+		// Bind each handler to stepHandlers so `this` refers to stepHandlers
+		for (const key in stepHandlers) {
+			if (typeof stepHandlers[key] === "function") {
+				stepHandlers[key] = stepHandlers[key].bind(stepHandlers);
 			}
-		}
-
-		const stepHandlers = {
-			"pushed_authorization_request": credentialOfferHandler,
-			"presentation": presentationHandler,
-			"presentation_success": presentationSuccessHandler,
-			"protocol_error": errorHandler,
 		}
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
 				// @ts-expect-error
-				stepHandlers[presentationRequest.nextStep]()
+				stepHandlers[presentationRequest.nextStep](presentationRequest)
 			}
 		})
 
