@@ -11,6 +11,7 @@ export type CredentialOfferHandlerFactoryConfig = {
 }
 
 type PushedAuthorizationRequestMetadata = {
+	issuer: string;
   credential_configuration_ids: string[];
   issuer_state?: string | undefined;
 };
@@ -18,30 +19,26 @@ type PushedAuthorizationRequestMetadata = {
 export function credentialOfferHandlerFactory(config: CredentialOfferHandlerFactoryConfig): HandlerFactoryResponse {
 	const { core, url, openID4VCI, openID4VCIHelper } = config;
 
-	return async function credentialOfferHandler({ credential_configuration_ids, issuer_state}: PushedAuthorizationRequestMetadata) {
+	return async function credentialOfferHandler({ issuer, credential_configuration_ids, issuer_state}: PushedAuthorizationRequestMetadata) {
 
 		try {
-			const { credentialIssuer } = await openID4VCI.handleCredentialOffer(url);
-
-			const { client_id } = await openID4VCIHelper.getClientId(credentialIssuer)
-			const { authzServeMetadata } = await openID4VCIHelper.getAuthorizationServerMetadata(credentialIssuer)
-			const { metadata } = await openID4VCIHelper.getCredentialIssuerMetadata(credentialIssuer);
-
+			const { client_id } = await openID4VCIHelper.getClientId(issuer)
+			const { authzServeMetadata } = await openID4VCIHelper.getAuthorizationServerMetadata(issuer)
+			const { metadata } = await openID4VCIHelper.getCredentialIssuerMetadata(issuer);
 
 			core.config.static_clients = [{
 				issuer: authzServeMetadata.issuer,
 				client_id: client_id,
-				scope: metadata.credential_configurations_supported[credential_configuration_ids[0]].scope
 			}];
 
-			const { protocol, nextStep, data } = await core.pushedAuthorizationRequest({
-				issuer: credentialIssuer,
+			const { protocol, nextStep, data } = await core.authorization({
+				issuer: issuer,
 				issuer_state: issuer_state ?? 'issuer_state',
 			});
 
-			if (data.authorize_url) {
-				this[nextStep](data)
-			}
+			console.log(data)
+
+			this[nextStep](data)
 		} catch (err) {
 				// window.history.replaceState({}, '', `${window.location.pathname}`);
 				console.error(err);
