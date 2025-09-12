@@ -3,5 +3,13 @@ import { Core } from '@wwwallet-private/client-core';
 import ClientCoreContext from '@/context/ClientCoreContext';
 
 export default function useClientCore(): Core {
-	return useContext(ClientCoreContext);
+	const core = useContext(ClientCoreContext);
+
+  if (!core) {
+    throw new Error(
+      'useClientCore must be used within a <ClientCoreContextProvider>'
+    );
+  }
+
+  return core;
 }
