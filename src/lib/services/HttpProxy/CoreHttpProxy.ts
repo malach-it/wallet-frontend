@@ -12,8 +12,8 @@ export function useCoreHttpProxy() {
 			};
 		},
 
-		post: async <T>(url: string, body: any) => {
-			const response = await httpProxy.post(url, body);
+		post: async <T>(url: string, body: any, config: any) => {
+			const response = await httpProxy.post(url, body, config.headers);
 
 			return {
 				data: response.data as T
