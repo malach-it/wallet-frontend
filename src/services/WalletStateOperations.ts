@@ -3,6 +3,7 @@ import { CredentialKeyPair } from "./keystore";
 import { WalletStateUtils } from "./WalletStateUtils";
 import { JWK } from "jose";
 import { SCHEMA_VERSION, WalletStateMigrations } from "./WalletStateMigrations";
+import { ClientState } from "@wwwallet-private/client-core";
 
 
 export type WalletStateContainer = {
@@ -140,8 +141,10 @@ export type WalletState = {
 
 		credentialIssuerIdentifier: string,
 		state: string,
+		issuer_state?: string;
+		client_state?: ClientState;
 		code_verifier: string,
-		credentialConfigurationId: string,
+		credentialConfigurationId?: string,
 		tokenResponse?: {
 			data: {
 				access_token: string,

@@ -14,21 +14,21 @@ type RootProviderProps = {
 
 const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 	return (
-		<ClientCoreContextProvider>
-			<StatusContextProvider>
-				<SessionContextProvider>
-					<CredentialsContextProvider>
-						<OpenID4VPContextProvider>
-							<OpenID4VCIContextProvider>
+		<StatusContextProvider>
+			<SessionContextProvider>
+				<CredentialsContextProvider>
+					<OpenID4VPContextProvider>
+						<OpenID4VCIContextProvider>
+							<ClientCoreContextProvider>
 								<UriHandler>
 									{children}
 								</UriHandler>
-							</OpenID4VCIContextProvider>
-						</OpenID4VPContextProvider>
-					</CredentialsContextProvider>
-				</SessionContextProvider>
-			</StatusContextProvider>
-		</ClientCoreContextProvider>
+							</ClientCoreContextProvider>
+						</OpenID4VCIContextProvider>
+					</OpenID4VPContextProvider>
+				</CredentialsContextProvider>
+			</SessionContextProvider>
+		</StatusContextProvider>
 	);
 };
 
