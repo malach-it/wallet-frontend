@@ -61,6 +61,15 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 		[]
 	);
 
+	const getByIssuerState = useCallback(
+		async (issuer_state: string): Promise<WalletStateCredentialIssuanceSession | null> => {
+			const r = Array.from(sessions.current.values()).filter((S) => S.issuer_state === issuer_state);
+			const res = r[r.length-1];
+			return res ? res : null;
+		},
+		[]
+	);
+
 	const cleanupExpired = useCallback(async (): Promise<void> => {
 		const rememberIssuerForSeconds = await getRememberIssuerAge();
 		console.log("Rememeber issuer for seconds = ", rememberIssuerForSeconds)
@@ -102,6 +111,7 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 				return;
 			}
 			sessions.current.set(fetched.sessionId, newState);
+			console.log(newState)
 		},
 		[getByState]
 	);
@@ -110,6 +120,7 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 		return {
 			getByCredentialIssuerIdentifierAndCredentialConfigurationId,
 			getByState,
+			getByIssuerState,
 			cleanupExpired,
 			create,
 			updateState,
@@ -118,6 +129,7 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 	}, [
 		getByCredentialIssuerIdentifierAndCredentialConfigurationId,
 		getByState,
+		getByIssuerState,
 		cleanupExpired,
 		create,
 		updateState,

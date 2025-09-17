@@ -114,6 +114,7 @@ export interface LocalStorageKeystore {
 		CommitCallback,
 	]>,
 	getCredentialIssuanceSessionByState(state: string): Promise<WalletStateCredentialIssuanceSession | null>,
+	getCredentialIssuanceSessionByIssuerState(issuer_state: string): Promise<WalletStateCredentialIssuanceSession | null>,
 	alterSettings(settings: Record<string, string>): Promise<[
 		{},
 		AsymmetricEncryptedContainer,
@@ -720,6 +721,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				issuanceSession.sessionId,
 				issuanceSession.credentialIssuerIdentifier,
 				issuanceSession.state,
+				issuanceSession.client_state,
 				issuanceSession.code_verifier,
 				issuanceSession.credentialConfigurationId,
 				issuanceSession.tokenResponse,
@@ -737,6 +739,10 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 
 	const getCredentialIssuanceSessionByState = useCallback(async (state: string): Promise<WalletStateCredentialIssuanceSession | null> => {
 		return calculatedWalletState ? calculatedWalletState.credentialIssuanceSessions.filter((s: WalletStateCredentialIssuanceSession) => s.state === state)[0] : null;
+	}, [editPrivateData, openPrivateData]);
+
+	const getCredentialIssuanceSessionByIssuerState = useCallback(async (issuer_state: string): Promise<WalletStateCredentialIssuanceSession | null> => {
+		return calculatedWalletState ? calculatedWalletState.credentialIssuanceSessions.filter((s: WalletStateCredentialIssuanceSession) => s.issuer_state === issuer_state)[0] : null;
 	}, [editPrivateData, openPrivateData]);
 
 	const alterSettings = useCallback(async (settings: Record<string, string>): Promise<[
@@ -783,6 +789,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		getAllPresentations,
 		saveCredentialIssuanceSessions,
 		getCredentialIssuanceSessionByState,
+		getCredentialIssuanceSessionByIssuerState,
 		alterSettings,
 	}), [
 		isOpen,
@@ -812,6 +819,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		getAllPresentations,
 		saveCredentialIssuanceSessions,
 		getCredentialIssuanceSessionByState,
+		getCredentialIssuanceSessionByIssuerState,
 		alterSettings,
 	]);
 }
