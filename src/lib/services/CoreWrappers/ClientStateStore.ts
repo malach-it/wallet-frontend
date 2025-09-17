@@ -33,7 +33,6 @@ export function useCoreClientStateStore(): ClientStateStore {
 		} satisfies WalletStateCredentialIssuanceSession;
 
 		await openID4VCIClientStateRepository.create(session);
-		await openID4VCIClientStateRepository.commitStateChanges();
 
 		return session.client_state;
 	}, [keystore, openID4VCIClientStateRepository]);
@@ -58,6 +57,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 		} satisfies WalletStateCredentialIssuanceSession;
 
 		await openID4VCIClientStateRepository.updateState(newSession);
+		// TODO: We need a better way to do the below, right now state is only saved at this step and not durinc creation...
 		await openID4VCIClientStateRepository.commitStateChanges();
 
 		return newSession.client_state
