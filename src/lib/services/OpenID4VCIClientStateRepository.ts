@@ -65,10 +65,6 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 		async (issuer_state: string): Promise<WalletStateCredentialIssuanceSession | null> => {
 			const r = Array.from(sessions.current.values()).filter((S) => S.issuer_state === issuer_state);
 			const res = r[r.length-1];
-
-			console.log(sessions)
-			console.log(r)
-			console.log(issuer_state)
 			return res ? res : null;
 		},
 		[]
