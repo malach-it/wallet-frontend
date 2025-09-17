@@ -19,7 +19,7 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
       httpClient,
 			clientStateStore
     });
-  }, [httpClient]);
+  }, [httpClient, clientStateStore]);
 
 	return (
 		<ClientCoreContext.Provider value={core}>
