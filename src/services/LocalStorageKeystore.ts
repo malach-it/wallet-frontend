@@ -721,6 +721,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				issuanceSession.sessionId,
 				issuanceSession.credentialIssuerIdentifier,
 				issuanceSession.state,
+				issuanceSession.client_state,
 				issuanceSession.code_verifier,
 				issuanceSession.credentialConfigurationId,
 				issuanceSession.tokenResponse,

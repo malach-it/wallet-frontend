@@ -17,7 +17,13 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
     return new Core({
       wallet_url: OPENID4VCI_REDIRECT_URI,
       httpClient,
-			clientStateStore
+			clientStateStore,
+			// TEMP
+			static_clients: [{
+				issuer: "http://issuer.localhost:8003",
+				client_id: "CLIENT123",
+				client_secret: "superSecretString"
+			}]
     });
   }, [httpClient, clientStateStore]);
 

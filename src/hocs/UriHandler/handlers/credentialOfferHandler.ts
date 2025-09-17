@@ -26,10 +26,10 @@ export function credentialOfferHandlerFactory(config: CredentialOfferHandlerFact
 			const { authzServeMetadata } = await openID4VCIHelper.getAuthorizationServerMetadata(issuer)
 			const { metadata } = await openID4VCIHelper.getCredentialIssuerMetadata(issuer);
 
-			core.config.static_clients = [{
-				issuer: authzServeMetadata.issuer,
-				client_id: client_id,
-			}];
+			// core.config.static_clients = [{
+			// 	issuer: authzServeMetadata.issuer,
+			// 	client_id: client_id,
+			// }];
 
 			const { protocol, nextStep, data } = await core.authorization({
 				issuer: issuer,

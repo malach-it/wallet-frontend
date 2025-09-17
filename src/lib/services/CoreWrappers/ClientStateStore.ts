@@ -32,6 +32,8 @@ export function useCoreClientStateStore(): ClientStateStore {
 			created: Math.floor(Date.now() / 1000)
 		} satisfies WalletStateCredentialIssuanceSession;
 
+		console.log("CREATE: ", session);
+
 		await openID4VCIClientStateRepository.create(session);
 
 		return session.client_state;
@@ -39,6 +41,15 @@ export function useCoreClientStateStore(): ClientStateStore {
 
 	const fromIssuerState = useCallback<ClientStateStore["fromIssuerState"]>(async (issuer, issuer_state): Promise<ClientState> => {
 		const session = await openID4VCIClientStateRepository.getByIssuerState(issuer_state);
+		session.client_state.context = session;
+
+		return session.client_state;
+	}, [openID4VCIClientStateRepository])
+
+	const fromState = useCallback<ClientStateStore["fromState"]>(async (state): Promise<ClientState> => {
+		const session = await openID4VCIClientStateRepository.getByState(state);
+		console.log("FROM_STATE: ", session);
+
 		session.client_state.context = session;
 
 		return session.client_state;
@@ -55,6 +66,9 @@ export function useCoreClientStateStore(): ClientStateStore {
 			},
 			credentialConfigurationId: credentialConfigurationIds[0]
 		} satisfies WalletStateCredentialIssuanceSession;
+
+		console.log("IDS: ", newSession);
+
 
 		await openID4VCIClientStateRepository.updateState(newSession);
 		// TODO: We need a better way to do the below, right now state is only saved at this step and not durinc creation...
@@ -75,6 +89,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 		} satisfies WalletStateCredentialIssuanceSession;
 
 		await openID4VCIClientStateRepository.updateState(newSession);
+		// Need to commit state changes here too
 
 		return newSession.client_state;
 	}, [openID4VCIClientStateRepository])
@@ -82,11 +97,13 @@ export function useCoreClientStateStore(): ClientStateStore {
 	return useMemo(() => ({
 		create,
 		fromIssuerState,
+		fromState,
 		setCredentialConfigurationIds,
 		setIssuerMetadata,
 	}), [
 		create,
 		fromIssuerState,
+		fromState,
 		setCredentialConfigurationIds,
 		setIssuerMetadata,
 	])

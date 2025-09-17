@@ -84,6 +84,7 @@ export type WalletSessionEventSaveCredentialIssuanceSession = {
 
 	credentialIssuerIdentifier: string,
 	state: string,
+	client_state: ClientState,
 	code_verifier: string,
 	credentialConfigurationId: string,
 	tokenResponse?: {
@@ -235,6 +236,7 @@ function credentialIssuanceSessionReducer(state: WalletStateCredentialIssuanceSe
 			return state.filter((s) => s.sessionId !== newEvent.sessionId).concat([{
 				sessionId: newEvent.sessionId,
 				state: newEvent.state,
+				client_state: newEvent.client_state,
 				code_verifier: newEvent.code_verifier,
 				credentialConfigurationId: newEvent.credentialConfigurationId,
 				credentialIssuerIdentifier: newEvent.credentialIssuerIdentifier,
@@ -602,6 +604,7 @@ export namespace WalletStateOperations {
 		sessionId: number,
 		credentialIssuerIdentifier: string,
 		state: string,
+		client_state: ClientState,
 		code_verifier: string,
 		credentialConfigurationId: string,
 		tokenResponse?: {
@@ -641,6 +644,7 @@ export namespace WalletStateOperations {
 
 					credentialIssuerIdentifier,
 					state,
+					client_state,
 					code_verifier,
 					credentialConfigurationId,
 					tokenResponse,
@@ -652,6 +656,7 @@ export namespace WalletStateOperations {
 			S: container.S,
 		};
 		await validateEventHistoryContinuity(newContainer);
+		console.log(client_state)
 		return newContainer;
 	}
 
