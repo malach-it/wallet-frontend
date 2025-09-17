@@ -163,6 +163,10 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				await credentialRequestBuilder.setDpopHeader();
 			}
 
+
+			console.log(credentialIssuerMetadata.metadata.credential_configurations_supported);
+			console.log(flowState.credentialConfigurationId)
+
 			const [_credConfId, credConf] = Object.entries(credentialIssuerMetadata.metadata.credential_configurations_supported).filter(([id, _credConf]) =>
 				id === flowState.credentialConfigurationId
 			)[0];
