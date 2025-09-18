@@ -21,7 +21,7 @@ export class Logger {
 				this[logLevel] = Function.prototype.bind.call(
 					console[logLevel],
 					console,
-					this.logPrefix(logLevel)
+					...this.logPrefix(logLevel)
 				);
 			}
 		}
@@ -32,11 +32,12 @@ export class Logger {
 	}
 
 	logPrefix(level: string) {
+		let prefix = `%c[${level}]%c`;
+		
 		if (!DISPLAY_CONSOLE) {
-			return `[${level}] ${new Date().toISOString()} | `;
+			prefix += ` ${new Date().toISOString()} | `;
 		}
-		return `[${level}]`
-	
+		return [prefix, `color: ${this.levelColors[level]}; font-weight: bold;`, ""];
 	}
 
 	error(...args) {}
