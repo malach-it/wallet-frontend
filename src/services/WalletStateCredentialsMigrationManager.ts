@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useCallback } from "react"
 import { WalletStateCredential } from "./WalletStateSchemaVersion1";
 import { LocalStorageKeystore } from "./LocalStorageKeystore";
 import { BackendApi } from "@/api";
+import { logger } from "@/logger";
 import { deriveHolderKidFromCredential } from "@/lib/services/OpenID4VCI/OpenID4VCI";
 
 
@@ -48,12 +49,12 @@ export function useWalletStateCredentialsMigrationManager(keystore: LocalStorage
 				credentialId: index,
 			}
 		}));
-		console.log("Transformed credentials = ", transformedVcEntities)
+		logger.debug("Transformed credentials = ", transformedVcEntities)
 		const [, newPrivateData, keystoreCommit] = await addCredentials(transformedVcEntities);
 		await updatePrivateData(newPrivateData);
 		await keystoreCommit();
 		migrated.current = true;
-		console.log("Successfully migrated credentials");
+		logger.debug("Successfully migrated credentials");
 		// receive all stored credentials from wallet-backend-server
 		// update WalletStateContainer (PrivateData)
 		// after successful update, delete all stored credentials from wallet-backend-server
@@ -62,7 +63,7 @@ export function useWalletStateCredentialsMigrationManager(keystore: LocalStorage
 	useEffect(() => {
 		if (updatePrivateData && addCredentials && getCalculatedWalletState && isOnline && !migrated.current) {
 			migrateVerifiableCredentialTable();
-			console.log("migrating credentials...")
+			logger.debug("migrating credentials...")
 		}
 	}, [updatePrivateData, addCredentials, getCalculatedWalletState, isOnline, migrateVerifiableCredentialTable]);
 
@@ -76,17 +77,17 @@ export function useWalletStateCredentialsMigrationManager(keystore: LocalStorage
 				await Promise.all(vcEntityList.map(async ({ credentialIdentifier }) => {
 					try {
 						await del('/storage/vc/' + credentialIdentifier);
-						console.log("Deleted vc with identifier " + credentialIdentifier);
+						logger.debug("Deleted vc with identifier " + credentialIdentifier);
 					}
 					catch (err) {
-						console.log("Failed to delete vc");
-						console.error(err);
+						logger.debug("Failed to delete vc");
+						logger.error(err);
 						throw err;
 					}
 				}));
 			}
 			catch (err) {
-				console.error(err);
+				logger.error(err);
 			}
 
 		})

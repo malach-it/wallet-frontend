@@ -11,6 +11,7 @@ import axios from "axios";
 import { BACKEND_URL, OPENID4VP_SAN_DNS_CHECK_SSL_CERTS, OPENID4VP_SAN_DNS_CHECK } from "../../../config";
 import { useHttpProxy } from "../HttpProxy/HttpProxy";
 import { useCallback, useContext, useMemo } from "react";
+import { logger } from "@/logger";
 import SessionContext from "@/context/SessionContext";
 import CredentialsContext from "@/context/CredentialsContext";
 import { cborDecode, cborEncode } from "@auth0/mdl/lib/cbor";
@@ -129,7 +130,7 @@ export function useOpenID4VP({
 		const publicKey = await importX509(getPublicKeyFromB64Cert(parsedHeader.x5c[0]), parsedHeader.alg);
 		const verificationResult = await jwtVerify(jwt, publicKey).catch(() => null);
 		if (verificationResult == null) {
-			console.log("Signature verification of request_uri failed");
+			logger.debug("Signature verification of request_uri failed");
 			return { error: HandleAuthorizationRequestError.NONTRUSTED_VERIFIER };
 		}
 		const decodedPayload = JSON.parse(new TextDecoder().decode(base64url.decode(payload)));
@@ -168,7 +169,7 @@ export function useOpenID4VP({
 					if (vc.format === VerifiableCredentialFormat.MSO_MDOC && VerifiableCredentialFormat.MSO_MDOC in descriptor.format) {
 						const credentialBytes = base64url.decode(vc.data);
 						const issuerSigned = cborDecode(credentialBytes);
-						console.log('issuerSigned: ', issuerSigned)
+						logger.debug('issuerSigned: ', issuerSigned)
 
 						const m = {
 							version: '1.0',
@@ -197,7 +198,7 @@ export function useOpenID4VP({
 						conformingVcList.push(vc.batchId);
 					}
 				} catch (err) {
-					console.error("Descriptor matching error", err);
+					logger.error("Descriptor matching error", err);
 				}
 			}
 
@@ -269,7 +270,7 @@ export function useOpenID4VP({
 				}
 				shapedCredentials.push(shaped);
 			} catch (e) {
-				console.error('DCQL shaping error for this VC:', e);
+				logger.error('DCQL shaping error for this VC:', e);
 			}
 		}
 		if (shapedCredentials.length === 0) {
@@ -286,10 +287,10 @@ export function useOpenID4VP({
 			if (match?.success === false) {
 				match.failed_credentials.forEach((failedCreds) => {
 					if (failedCreds.meta.success === false) {
-						console.error("DCQL metadata issues: ", failedCreds.meta.issues);
+						logger.error("DCQL metadata issues: ", failedCreds.meta.issues);
 					}
 					if (!failedCreds.claims.success) {
-						console.error("DCQL failed claims: ", failedCreds.claims)
+						logger.error("DCQL failed claims: ", failedCreds.claims)
 					}
 				})
 			}
@@ -499,7 +500,7 @@ export function useOpenID4VP({
 				originalVCs.push(credential);
 
 			} else if (credential.format === VerifiableCredentialFormat.MSO_MDOC) {
-				console.log("Response uri = ", response_uri);
+				logger.debug("Response uri = ", response_uri);
 
 				const descriptor = presentationDefinition.input_descriptors.filter((desc) => desc.id === descriptor_id)[0];
 				const credentialBytes = base64url.decode(credential.data);
@@ -526,9 +527,9 @@ export function useOpenID4VP({
 					// @ts-ignore
 					return Array.from(uint8Array, byte => byte.toString(16).padStart(2, '0')).join('');
 				}
-				console.log("Device response in hex format = ", uint8ArrayToHexString(deviceResponseMDoc.encode()));
+				logger.debug("Device response in hex format = ", uint8ArrayToHexString(deviceResponseMDoc.encode()));
 				const encodedDeviceResponse = base64url.encode(deviceResponseMDoc.encode());
-				console.log("B64U Encoded device response = ", encodedDeviceResponse);
+				logger.debug("B64U Encoded device response = ", encodedDeviceResponse);
 				selectedVCs.push(encodedDeviceResponse);
 				generatedVPs.push(encodedDeviceResponse);
 				descriptorMap.push({
@@ -887,8 +888,8 @@ export function useOpenID4VP({
 				client_metadata = payload.client_metadata;
 				response_mode = payload.response_mode ?? response_mode;
 				if (payload.transaction_data) {
-					console.log("Received transaction data");
-					console.log('Transaction data = ', payload.transaction_data)
+					logger.debug("Received transaction data");
+					logger.debug('Transaction data = ', payload.transaction_data)
 					transaction_data = payload.transaction_data;
 					parsedTransactionData = parseTransactionData(transaction_data, presentation_definition, dcql_query);
 					if (parsedTransactionData === null) {
@@ -900,7 +901,7 @@ export function useOpenID4VP({
 
 				await verifyHostnameAndCerts(request_uri, response_uri, parsedHeader);
 			} catch (e) {
-				console.error("Failed to handle request_uri", e);
+				logger.error("Failed to handle request_uri", e);
 				return { error: HandleAuthorizationRequestError.NONTRUSTED_VERIFIER };
 			}
 		}
@@ -919,7 +920,7 @@ export function useOpenID4VP({
 		}
 
 
-		console.log("VC entity list = ", vcEntityList)
+		logger.debug("VC entity list = ", vcEntityList)
 		const vcList = vcEntityList.filter((cred) => cred.instanceId === 0);
 
 		await openID4VPRelyingPartyStateRepository.store(new OpenID4VPRelyingPartyState(
@@ -936,8 +937,8 @@ export function useOpenID4VP({
 		);
 
 		let matchResult;
-		console.log('Presentation Definition: ', presentation_definition);
-		console.log('DCQL Query: ', dcql_query);
+		logger.debug('Presentation Definition: ', presentation_definition);
+		logger.debug('DCQL Query: ', dcql_query);
 		if (presentation_definition) {
 			matchResult = await matchCredentialsToDefinition(vcList, presentation_definition, parseCredential, t);
 		} else if (dcql_query) {
@@ -951,7 +952,7 @@ export function useOpenID4VP({
 		const verifierDomainName = client_id.includes("http") ? new URL(client_id).hostname : client_id;
 
 		if (mapping.size === 0) {
-			console.error("No matching credentials for descriptors");
+			logger.error("No matching credentials for descriptors");
 			throw new Error("Credentials don't satisfy any descriptor");
 		}
 
@@ -991,7 +992,7 @@ export function useOpenID4VP({
 
 		const transactionId = WalletStateUtils.getRandomUint32();
 		const [, newPrivateData, keystoreCommit] = await keystore.addPresentations(generatedVPs.map((vpData, index) => {
-			console.log("Presentation: ")
+			logger.debug("Presentation: ")
 
 			return {
 				transactionId: transactionId,
@@ -1004,13 +1005,13 @@ export function useOpenID4VP({
 		await keystoreCommit();
 
 		const bodyString = formData.toString();
-		console.log('bodyString: ', bodyString)
+		logger.debug('bodyString: ', bodyString)
 		try {
 			const res = await httpProxy.post(S.response_uri, formData.toString(), {
 				'Content-Type': 'application/x-www-form-urlencoded'
 			});
 			const responseData = res.data as { presentation_during_issuance_session?: string, redirect_uri?: string };
-			console.log("Direct post response = ", JSON.stringify(res.data));
+			logger.debug("Direct post response = ", JSON.stringify(res.data));
 			if (responseData.presentation_during_issuance_session) {
 				return { presentation_during_issuance_session: responseData.presentation_during_issuance_session };
 			}
@@ -1022,7 +1023,7 @@ export function useOpenID4VP({
 				description: "The verification process has been completed",
 			}, 'success');
 		} catch (err) {
-			console.error(err);
+			logger.error(err);
 			showStatusPopup({
 				title: "Error in verification",
 				description: "The verification process was not completed successfully",
