@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
-import { Core } from "@wwwallet-private/client-core";
+import { Core, OauthError } from "@wwwallet-private/client-core";
 import { useLocation } from "react-router-dom";
-import { logger } from "@/logger";
+import { jsonToLog, logger } from "@/logger";
 import checkForUpdates from "../../offlineUpdateSW";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
@@ -153,6 +153,9 @@ export const UriHandler = ({ children }) => {
 				// @ts-expect-error
 				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
 			}
+		}).catch(err => {
+			if (err instanceof OauthError) logger.error("Oauth error:", jsonToLog(err), err.data);
+			else logger.error(err);
 		})
 
 
