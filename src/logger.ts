@@ -6,48 +6,29 @@ export class Logger {
 	level: LogLevel;
 	logLevels: Array<LogLevel> = ["error", "info", "warn", "debug"];
 
+	levelColors: Record<LogLevel, string> = {
+		error: "#FF5C5C",
+		info: "#4DA6FF",
+		warn: "#FFAA00",
+		debug: "#9E9E9E",
+	}
+
 	constructor(level: LogLevel = "info") {
 		this.level = level;
+			
+		for (const [index, logLevel] of this.logLevels.entries()) {
+			if (index <= this.logLevels.indexOf(this.level)) {
+				this[logLevel] = Function.prototype.bind.call(
+					console[logLevel],
+					console,
+					this.logPrefix(logLevel)
+				);
+			}
+		}
 	}
 
 	setLevel(logLevel: LogLevel) {
 		this.level = logLevel
-	}
-
-	error(...args) {
-		if (this.logLevels.indexOf("error") > this.logLevels.indexOf(this.level))
-			return;
-
-		for (const message of args) {
-			console.error(this.logPrefix("error"), message);
-		}
-	}
-
-	info(...args) {
-		if (this.logLevels.indexOf("info") > this.logLevels.indexOf(this.level))
-			return;
-
-		for (const message of args) {
-			console.info(this.logPrefix("info"), message);
-		}
-	}
-
-	warn(...args) {
-		if (this.logLevels.indexOf("warn") > this.logLevels.indexOf(this.level))
-			return;
-
-		for (const message of args) {
-			console.warn(this.logPrefix("warn"), message);
-		}
-	}
-
-	debug(...args) {
-		if (this.logLevels.indexOf("debug") > this.logLevels.indexOf(this.level))
-			return;
-
-		for (const message of args) {
-			console.log(this.logPrefix("debug"), message);
-		}
 	}
 
 	logPrefix(level: string) {
@@ -55,7 +36,13 @@ export class Logger {
 			return `[${level}] ${new Date().toISOString()} | `;
 		}
 		return `[${level}]`
+	
 	}
+
+	error(...args) {}
+	info(...args) {}
+	warn(...args) {}
+	debug(...args) {}
 }
 
 export const logger = new Logger(LOG_LEVEL || "debug")
