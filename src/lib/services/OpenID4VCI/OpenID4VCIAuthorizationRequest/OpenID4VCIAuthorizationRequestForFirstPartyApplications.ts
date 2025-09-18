@@ -6,6 +6,7 @@ import { generateRandomIdentifier } from "../../../utils/generateRandomIdentifie
 import { OpenID4VCIClientState } from "../../../types/OpenID4VCIClientState";
 import { useHttpProxy } from "../../HttpProxy/HttpProxy";
 import { useCallback, useMemo, useContext } from "react";
+import { logger } from "@/logger";
 import SessionContext from "@/context/SessionContext";
 import OpenID4VPContext from "@/context/OpenID4VPContext";
 import { IOpenID4VCIClientStateRepository } from "@/lib/interfaces/IOpenID4VCIClientStateRepository";
@@ -57,7 +58,7 @@ export function useOpenID4VCIAuthorizationRequestForFirstPartyApplications(openI
 				res = await httpProxy.post(config.authorizationServerMetadata.authorization_challenge_endpoint, formData.toString(), {
 					'Content-Type': 'application/x-www-form-urlencoded'
 				});
-				console.log("Res = ", res)
+				logger.debug("Res = ", res)
 				const err = res.err;
 				if (err) {
 					if (err?.data && err?.data?.error === "insufficient_authorization") { // Authorization Error Response
@@ -101,7 +102,7 @@ export function useOpenID4VCIAuthorizationRequestForFirstPartyApplications(openI
 						return { authorization_code: res.data.authorization_code, state: state };
 					}
 					else {
-						console.error(err);
+						logger.error(err);
 						throw new Error("First party app authorization failed");
 					}
 				}
