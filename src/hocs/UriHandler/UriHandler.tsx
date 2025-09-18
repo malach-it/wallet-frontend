@@ -154,7 +154,7 @@ export const UriHandler = ({ children }) => {
 				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
 			}
 		}).catch(err => {
-			if (err instanceof OauthError) logger.error("Oauth error:", jsonToLog(err), err.data);
+			if (err instanceof OauthError) logger.error("Oauth error:", jsonToLog(err));
 			else logger.error(err);
 		})
 
