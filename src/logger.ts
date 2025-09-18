@@ -67,7 +67,7 @@ window.logger = logger;
 export function jsonToLog(json: any): string {
 	let indt = (i: number) => " ".repeat(i);
 
-	const parse = (input: any, indent: number = 4) => {
+	const parse = (input: any, indent: number = 2) => {
 		if (input === null || typeof input !== "object") {
 			return String(input).trim();
 		}
