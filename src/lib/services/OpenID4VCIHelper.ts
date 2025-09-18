@@ -1,5 +1,6 @@
 import { IOpenID4VCIHelper } from "../interfaces/IOpenID4VCIHelper";
 import { base64url, importX509, jwtVerify } from "jose";
+import { logger } from "@/logger";
 import { getPublicKeyFromB64Cert } from "../utils/pki";
 import { useHttpProxy } from "./HttpProxy/HttpProxy";
 import { useCallback, useContext, useMemo } from "react";
@@ -22,7 +23,7 @@ export function useOpenID4VCIHelper(): IOpenID4VCIHelper {
 				const parsedData = schema.parse(response.data);
 				return parsedData;
 			} catch (err) {
-				console.error(`Error fetching from ${path}:`, err);
+				logger.error(`Error fetching from ${path}:`, err);
 				throw new Error(`Couldn't get data from ${path}`);
 			}
 		}, [httpProxy])
@@ -54,7 +55,7 @@ export function useOpenID4VCIHelper(): IOpenID4VCIHelper {
 				return { metadata };
 			}
 			catch (err) {
-				console.error(err);
+				logger.error(err);
 				return null;
 			}
 		},
@@ -114,8 +115,8 @@ export function useOpenID4VCIHelper(): IOpenID4VCIHelper {
 				return { client_id: "CLIENT123" };
 			}
 			catch (err) {
-				console.log("Could not get client_id for issuer " + credentialIssuerIdentifier + " Details:");
-				console.error(err);
+				logger.debug("Could not get client_id for issuer " + credentialIssuerIdentifier + " Details:");
+				logger.error(err);
 				return { client_id: "CLIENT123" };
 			}
 		},
@@ -140,7 +141,7 @@ export function useOpenID4VCIHelper(): IOpenID4VCIHelper {
 				return null;
 			}
 			catch (err) {
-				console.error(err);
+				logger.error(err);
 				return null;
 			}
 		},
@@ -172,7 +173,7 @@ export function useOpenID4VCIHelper(): IOpenID4VCIHelper {
 						config.display?.forEach(d => d.logo?.uri && logoUris.push(d.logo.uri));
 					});
 
-					logoUris.forEach(uri => httpProxy.get(uri, {}, { useCache: shouldUseCache }).catch(console.error));
+					logoUris.forEach(uri => httpProxy.get(uri, {}, { useCache: shouldUseCache }).catch(logger.error));
 
 					if (metadata.mdoc_iacas_uri) {
 						const response = await getMdocIacas(metadata.credential_issuer, metadata, shouldUseCache);
@@ -183,7 +184,7 @@ export function useOpenID4VCIHelper(): IOpenID4VCIHelper {
 						}
 					}
 				} catch (error) {
-					console.error(`Failed to fetch metadata for ${entity.credentialIssuerIdentifier}:`, error);
+					logger.error(`Failed to fetch metadata for ${entity.credentialIssuerIdentifier}:`, error);
 				}
 			});
 		},

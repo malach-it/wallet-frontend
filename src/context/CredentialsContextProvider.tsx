@@ -2,6 +2,7 @@ import React, { useState, useCallback, useContext, useRef, useEffect } from 'rea
 import SessionContext from './SessionContext';
 import { initializeCredentialEngine } from "../lib/initializeCredentialEngine";
 import { CredentialVerificationError } from "wallet-common/dist/error";
+import { logger } from '@/logger';
 import { useHttpProxy } from "@/lib/services/HttpProxy/HttpProxy";
 import CredentialsContext, { ExtendedVcEntity, Instance } from "./CredentialsContext";
 import { VerifiableCredentialFormat } from "wallet-common/dist/types";
@@ -50,7 +51,7 @@ export const CredentialsContextProvider = ({ children }) => {
 			trustedCertificates,
 			useCache,
 			(issuerIdentifier: string) => {
-				console.log(`[CredentialsContext] Issuer metadata resolved for: ${issuerIdentifier}`);
+				logger.debug(`[CredentialsContext] Issuer metadata resolved for: ${issuerIdentifier}`);
 			}
 		);
 		setCredentialEngine(engine);
@@ -59,10 +60,10 @@ export const CredentialsContextProvider = ({ children }) => {
 	useEffect(() => {
 		if (httpProxy && helper) {
 			if (prevIsLoggedIn.current === false && isLoggedIn === true) {
-				console.log("[CredentialsContext] Detected login transition, initializing without cache");
+				logger.debug("[CredentialsContext] Detected login transition, initializing without cache");
 				initializeEngine(false);
 			} else if (isLoggedIn) {
-				console.log("[CredentialsContext] Initializing on first load with cache");
+				logger.debug("[CredentialsContext] Initializing on first load with cache");
 				initializeEngine(true);
 			}
 		}
@@ -94,7 +95,7 @@ export const CredentialsContextProvider = ({ children }) => {
 			return null;
 		}
 		catch (err) {
-			console.error(err);
+			logger.error(err);
 			return null;
 		}
 
@@ -201,7 +202,7 @@ export const CredentialsContextProvider = ({ children }) => {
 			credentialNumber.current = storedCredentials?.length;
 
 		} catch (error) {
-			console.error('Failed to fetch data', error);
+			logger.error('Failed to fetch data', error);
 		}
 	}, [fetchVcData, setVcEntityList]);
 
@@ -209,7 +210,7 @@ export const CredentialsContextProvider = ({ children }) => {
 		if (!getCalculatedWalletState || !credentialEngine || !isLoggedIn) {
 			return;
 		}
-		console.log("Triggerring getData()")
+		logger.debug("Triggerring getData()")
 		getData();
 	}, [getData, getCalculatedWalletState, credentialEngine, isLoggedIn]);
 

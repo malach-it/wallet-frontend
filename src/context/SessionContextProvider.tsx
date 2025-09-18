@@ -3,6 +3,7 @@ import React, { useContext, useEffect, useCallback, useRef, useMemo, useState } 
 import StatusContext from './StatusContext';
 import { useApi } from '../api';
 import { setApi, setKeystore } from '@/store';
+import { logger } from '@/logger';
 import { KeystoreEvent, useLocalStorageKeystore } from '../services/LocalStorageKeystore';
 import keystoreEvents from '../services/keystoreEvents';
 import SessionContext, { SessionContextValue } from './SessionContext';
@@ -37,7 +38,7 @@ export const SessionContextProvider = ({ children }) => {
 	// Memoize clearSession using useCallback
 	const clearSession = useCallback(async () => {
 		window.history.replaceState({}, '', `${window.location.pathname}`);
-		console.log('[Session Context] Clear Session');
+		logger.debug('[Session Context] Clear Session');
 		api.clearSession();
 	}, [api]);
 
@@ -48,7 +49,7 @@ export const SessionContextProvider = ({ children }) => {
 
 	// The close() will dispatch Event CloseSessionTabLocal in order to call the clearSession
 	const logout = useCallback(async () => {
-		console.log('[Session Context] Close Keystore');
+		logger.debug('[Session Context] Close Keystore');
 		await keystore.close();
 	}, [keystore]);
 

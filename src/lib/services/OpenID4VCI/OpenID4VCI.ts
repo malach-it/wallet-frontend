@@ -1,3 +1,4 @@
+import { logger } from '@/logger';
 import { IOpenID4VCI } from '../../interfaces/IOpenID4VCI';
 import { CredentialOfferSchema } from '../../schemas/CredentialOfferSchema';
 import * as jose from 'jose';
@@ -148,11 +149,11 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				if (result.success) {
 
 					if (result.value.warnings && result.value.warnings.length > 0) {
-						console.warn(`Credential had warnings:`, result.value.warnings);
+						logger.warn(`Credential had warnings:`, result.value.warnings);
 						warnings = result.value.warnings;
 					}
 				} else {
-					console.error(`Credential failed to parse:`, result.error, result.message);
+					logger.error(`Credential failed to parse:`, result.error, result.message);
 					showMessagePopup({ title: t('issuance.error'), description: t(`parsing.error${result.error}`) });
 					return;
 				}
@@ -250,11 +251,11 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				}
 			}
 
-			console.log("Selected proof type = ", selectedProofType);
+			logger.debug("Selected proof type = ", selectedProofType);
 
 			const { credentialResponse } = await credentialRequestBuilder.execute(flowState.credentialConfigurationId, selectedProofType);
 
-			console.log("Response = ", credentialResponse)
+			logger.debug("Response = ", credentialResponse)
 
 			const new_c_nonce = credentialResponse.data.c_nonce;
 			const new_c_nonce_expires_in = credentialResponse.data.c_nonce_expires_in;
@@ -272,9 +273,9 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 					transactionId: credentialResponse.data.transaction_id
 				};
 				await openID4VCIClientStateRepository.updateState(flowState);
-				console.log("Flow state: ", flowState)
+				logger.debug("Flow state: ", flowState)
 				const s = await openID4VCIClientStateRepository.getByState(flowState.state);
-				console.log("Updated S: ", s);
+				logger.debug("Updated S: ", s);
 				await openID4VCIClientStateRepository.cleanupExpired();
 				setCommitStateChanges(1);
 				navigate("/");
@@ -326,13 +327,13 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				credentialConfigurationId: string;
 			}
 		}) => {
-			console.log(JSON.stringify(requestCredentialsParams));
+			logger.debug(JSON.stringify(requestCredentialsParams));
 			const [authzServerMetadata, clientId] = await Promise.all([
 				openID4VCIHelper.getAuthorizationServerMetadata(credentialIssuerIdentifier),
 				openID4VCIHelper.getClientId(credentialIssuerIdentifier)
 			]);
 			if (requestCredentialsParams.usingActiveAccessToken) {
-				console.log("Attempting with active access token")
+				logger.debug("Attempting with active access token")
 
 				const flowState = await openID4VCIClientStateRepository.getByCredentialIssuerIdentifierAndCredentialConfigurationId(credentialIssuerIdentifier, requestCredentialsParams.usingActiveAccessToken.credentialConfigurationId)
 				if (!flowState) {
@@ -353,7 +354,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 					return;
 				}
 				else {
-					console.log("Using active access token: c_nonce or access_token are expired");
+					logger.debug("Using active access token: c_nonce or access_token are expired");
 				}
 
 				// if access_token is expired
@@ -449,7 +450,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				const { access_token, c_nonce, expires_in, c_nonce_expires_in, refresh_token } = result.response;
 
 				if (!access_token) {
-					console.log("Missing access_token from response");
+					logger.debug("Missing access_token from response");
 					return;
 				}
 
@@ -463,7 +464,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				await openID4VCIClientStateRepository.updateState(flowState);
 			}
 			catch (err) {
-				console.error(err);
+				logger.error(err);
 				throw new Error("Failed to extract the response and update the OpenID4VCIClientStateRepository");
 			}
 
@@ -472,7 +473,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				await credentialRequest(flowState.tokenResponse, flowState);
 			}
 			catch (err) {
-				console.error("Error handling authrozation response ", err);
+				logger.error("Error handling authrozation response ", err);
 				throw new Error("Credential request failed");
 			}
 		},
@@ -500,7 +501,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 
 			const s = await openID4VCIClientStateRepository.getByState(state);
 			if (!s || !s.credentialIssuerIdentifier) {
-				console.log("No credential issuer identifier was found in the issuance flow state");
+				logger.debug("No credential issuer identifier was found in the issuance flow state");
 				return;
 			}
 			if (sessionStorage.getItem('oid4vci_last_used_state') === state) {
@@ -508,7 +509,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 			}
 
 			sessionStorage.setItem('oid4vci_last_used_state', state);
-			console.log("Handling authorization response...");
+			logger.debug("Handling authorization response...");
 			await requestCredentials(s.credentialIssuerIdentifier, {
 				dpopNonceHeader: dpopNonceHeader,
 				authorizationCodeGrant: {
@@ -540,7 +541,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 					offer = response.data;
 				}
 				catch (err) {
-					console.error(err);
+					logger.error(err);
 					return;
 				}
 			}
@@ -594,7 +595,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				});
 				return {};
 			}
-			catch (err) { console.error(err) }
+			catch (err) { logger.error(err) }
 
 			const [authzServerMetadata, credentialIssuerMetadata, clientId] = await Promise.all([
 				openID4VCIHelper.getAuthorizationServerMetadata(credentialIssuerIdentifier),
@@ -631,7 +632,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 					}
 				).then((result) => {
 					if (!('authorization_code' in result)) {
-						console.error("authorization_code was not found in the result");
+						logger.error("authorization_code was not found in the result");
 						return;
 					}
 					return handleAuthorizationResponse(`openid://?code=${result.authorization_code}&state=${result.state}`);
@@ -674,12 +675,12 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 				const { created, credentialIssuerIdentifier, credentialEndpoint: { transactionId }, tokenResponse: { data: { access_token } } } = s;
 				const { metadata } = await openID4VCIHelper.getCredentialIssuerMetadata(credentialIssuerIdentifier);
 				const now = Math.floor(new Date().getTime() / 1000);
-				console.log("Transaction id: ", transactionId)
+				logger.debug("Transaction id: ", transactionId)
 				if (!transactionId) {
 					continue;
 				}
 				if (now - created > config.OPENID4VCI_TRANSACTION_ID_LIFETIME_IN_SECONDS) { // exceeded lifetime, then stop tracking
-					console.log("Deferred: exceeded lifetime")
+					logger.debug("Deferred: exceeded lifetime")
 					await openID4VCIClientStateRepository.updateState({
 						...s,
 						credentialEndpoint: { transactionId: undefined },
@@ -700,22 +701,22 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 					await deferredCredentialRequestBuilder.setDpopHeader();
 				}
 
-				console.log("attemtping deferred...")
+				logger.debug("attemtping deferred...")
 				try {
 					const { credentialResponse } = await deferredCredentialRequestBuilder.executeDeferredFetch(transactionId);
-					console.log("Credential response = ", credentialResponse)
+					logger.debug("Credential response = ", credentialResponse)
 					if (credentialResponse?.data?.error && credentialResponse?.data?.error !== "issuance_pending") {
-						console.log("Error deferred: ", credentialResponse?.data?.error)
+						logger.debug("Error deferred: ", credentialResponse?.data?.error)
 						await openID4VCIClientStateRepository.updateState({
 							...s,
 							credentialEndpoint: { transactionId: undefined },
 						});
-						console.log("Invalidated transaction id: ", transactionId)
+						logger.debug("Invalidated transaction id: ", transactionId)
 						stateUpdated = true;
 						continue;
 					}
 					if (credentialResponse?.data?.error === "invalid_transaction_id") {
-						console.log("Invalid transaction id")
+						logger.debug("Invalid transaction id")
 						await openID4VCIClientStateRepository.updateState({
 							...s,
 							credentialEndpoint: { transactionId: undefined },
@@ -752,11 +753,11 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 							})
 						if (result.success) {
 							if (result.value.warnings && result.value.warnings.length > 0) {
-								console.warn(`Credential had warnings:`, result.value.warnings);
+								logger.warn(`Credential had warnings:`, result.value.warnings);
 								// warnings = result.value.warnings;
 							}
 						} else {
-							console.error(`Credential failed to parse:`, result.error, result.message);
+							logger.error(`Credential failed to parse:`, result.error, result.message);
 							continue;
 						}
 						credsCollected.push(...credentialArray);
@@ -764,7 +765,7 @@ export function useOpenID4VCI({ errorCallback, showPopupConsent, showMessagePopu
 					}
 				}
 				catch (err) {
-					console.log(err);
+					logger.debug(err);
 				}
 
 			}

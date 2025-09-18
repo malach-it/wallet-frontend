@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
+import { logger } from '@/logger';
 import StatusContext, { Connectivity } from './StatusContext';
 import { useLocalStorage } from '@/hooks/useStorage';
 import { AppState, setOffline, setOnline, setPwaInstallable, setPwaNotInstallable } from '@/store';
@@ -102,7 +103,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 	}, []);
 
 	useEffect(() => {
-		console.log('Online status:', isOnline);
+		logger.debug('Online status:', isOnline);
 	}, [isOnline]);
 
 	// Polling logic when offline
