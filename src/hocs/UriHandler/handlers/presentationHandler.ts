@@ -1,4 +1,5 @@
 import { Core } from "@wwwallet-private/client-core";
+import { logger } from "@/logger";
 import { type HandlerFactoryResponse } from "../resources";
 import { HandleAuthorizationRequestError, type IOpenID4VP } from "@/lib/interfaces/IOpenID4VP";
 import { TFunction } from "i18next";
@@ -27,7 +28,7 @@ export function presentationHandlerFactory(config: PresentationHandlerFactoryCon
 		setUsedRequestUris((uriArray) => [...uriArray, u.searchParams.get('request_uri')]);
 
 		await openID4VP.handleAuthorizationRequest(u.toString(), vcEntityList).then((result) => {
-			console.log("Result = ", result);
+			logger.debug("Result = ", result);
 
 			if ('error' in result) {
 				if (result.error === HandleAuthorizationRequestError.INSUFFICIENT_CREDENTIALS) {
@@ -45,7 +46,7 @@ export function presentationHandlerFactory(config: PresentationHandlerFactoryCon
 			const { conformantCredentialsMap, verifierDomainName, verifierPurpose } = result;
 			const jsonedMap = Object.fromEntries(conformantCredentialsMap);
 
-			console.log("Prompting for selection..")
+			logger.debug("Prompting for selection..")
 
 			return openID4VP.promptForCredentialSelection(jsonedMap, verifierDomainName, verifierPurpose);
 		}).then((selection) => {
@@ -53,7 +54,7 @@ export function presentationHandlerFactory(config: PresentationHandlerFactoryCon
 				return;
 			}
 
-			console.log("Selection = ", selection);
+			logger.debug("Selection = ", selection);
 
 			return openID4VP.sendAuthorizationResponse(selection, vcEntityList);
 
@@ -62,9 +63,9 @@ export function presentationHandlerFactory(config: PresentationHandlerFactoryCon
 				setRedirectUri(res.url);
 			}
 		}).catch(err => {
-			console.log("Failed to handle authorization req");
+			logger.debug("Failed to handle authorization req");
 			window.history.replaceState({}, '', `${window.location.pathname}`);
-			console.error(err);
+			logger.error(err);
 		})
 		return;
 	}

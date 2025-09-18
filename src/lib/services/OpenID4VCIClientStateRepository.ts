@@ -1,3 +1,4 @@
+import { logger } from "@/logger";
 import { useContext, useCallback, useMemo, useState, useRef, useEffect } from "react";
 import SessionContext from "@/context/SessionContext";
 import { WalletStateCredentialIssuanceSession } from "@/services/WalletStateOperations";
@@ -20,7 +21,7 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 			S.credentialIssuanceSessions.map((session) => {
 				sessions.current.set(session.sessionId, session);
 			});
-			console.log("Loaded Credential Issuance Sessions from keystore = ", Array.from(sessions.current.values()));
+			logger.debug("Loaded Credential Issuance Sessions from keystore = ", Array.from(sessions.current.values()));
 		}
 	}, [keystore]);
 
@@ -72,17 +73,17 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 
 	const cleanupExpired = useCallback(async (): Promise<void> => {
 		const rememberIssuerForSeconds = await getRememberIssuerAge();
-		console.log("Rememeber issuer for seconds = ", rememberIssuerForSeconds)
+		logger.debug("Rememeber issuer for seconds = ", rememberIssuerForSeconds)
 
 		if (rememberIssuerForSeconds == null) {
 			return;
 		}
 		for (const res of Array.from(sessions.current.values())) {
-			console.log("Res i: ", res);
+			logger.debug("Res i: ", res);
 			if (res.created &&
 				typeof res.created === 'number' &&
 				Math.floor(Date.now() / 1000) > res.created + rememberIssuerForSeconds) {
-				console.log("Removed session id = ", res.sessionId)
+				logger.debug("Removed session id = ", res.sessionId)
 				sessions.current.delete(res.sessionId);
 			}
 		}

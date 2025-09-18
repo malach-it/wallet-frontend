@@ -1,3 +1,4 @@
+import { logger } from "@/logger";
 import { IOpenID4VCIAuthorizationRequest } from "../../../interfaces/IOpenID4VCIAuthorizationRequest";
 import { OpenidAuthorizationServerMetadata } from "../../../schemas/OpenidAuthorizationServerMetadataSchema";
 import pkce from 'pkce-challenge';
@@ -73,7 +74,7 @@ export function useOpenID4VCIPushedAuthorizationRequest(openID4VCIClientStateRep
 					throw new Error("Pushed authorization request failed ", err.response.data)
 				}
 				else {
-					console.error(err);
+					logger.error(err);
 					throw new Error("Pushed authorization request failed")
 				}
 			}

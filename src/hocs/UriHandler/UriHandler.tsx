@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
-import { Core } from "@wwwallet-private/client-core";
+import { Core, OauthError } from "@wwwallet-private/client-core";
 import { useLocation } from "react-router-dom";
+import { jsonToLog, logger } from "@/logger";
 import checkForUpdates from "../../offlineUpdateSW";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
@@ -102,7 +103,7 @@ export const UriHandler = ({ children }) => {
 		}
 		const params = new URLSearchParams(window.location.search);
 		if (synced === false && getCalculatedWalletState() && params.get('sync') !== 'fail') {
-			console.log("Actually syncing...");
+			logger.debug("Actually syncing...");
 			syncPrivateData(cachedUser).then((r) => {
 				if (!r.ok) {
 					return;
@@ -152,6 +153,9 @@ export const UriHandler = ({ children }) => {
 				// @ts-expect-error
 				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
 			}
+		}).catch(err => {
+			if (err instanceof OauthError) logger.error("Oauth error:", jsonToLog(err));
+			else logger.error(err);
 		})
 
 
@@ -159,7 +163,7 @@ export const UriHandler = ({ children }) => {
 		// 	const u = new URL(urlToCheck);
 		// 	if (u.searchParams.size === 0) return;
 		// 	// setUrl(window.location.origin);
-		// 	console.log('[Uri Handler]: check', url);
+		// 	logger.debug('[Uri Handler]: check', url);
 
 		// 	if (u.protocol === 'openid-credential-offer' || u.searchParams.get('credential_offer') || u.searchParams.get('credential_offer_uri')) {
 		// 	}
