@@ -54,9 +54,15 @@ export class Logger {
 
 	constructor(level: LogLevel = "info") {
 		this.level = level;
-			
+
 		for (const [index, logLevel] of this.logLevels.entries()) {
 			if (index <= this.logLevels.indexOf(this.level)) {
+				this.group[logLevel] = Function.prototype.bind.call(
+					console.group, 
+					console, 
+					...this.logPrefix(logLevel),
+				);
+
 				this[logLevel] = Function.prototype.bind.call(
 					console[logLevel],
 					console,
@@ -78,6 +84,10 @@ export class Logger {
 		}
 		return [prefix, `color: ${this.levelColors[level]}; font-weight: bold;`, ""];
 	}
+
+	group: Record<LogLevel & "end", (...args) => void> = {
+		end() { console.groupEnd() }
+	};
 
 	error(...args) {}
 	info(...args) {}
