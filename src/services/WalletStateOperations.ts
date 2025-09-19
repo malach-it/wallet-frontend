@@ -656,7 +656,6 @@ export namespace WalletStateOperations {
 			S: container.S,
 		};
 		await validateEventHistoryContinuity(newContainer);
-		console.log(client_state)
 		return newContainer;
 	}
 

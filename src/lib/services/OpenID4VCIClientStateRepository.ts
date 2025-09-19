@@ -112,7 +112,6 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 				return;
 			}
 			sessions.current.set(fetched.sessionId, newState);
-			console.log(newState)
 		},
 		[getByState]
 	);

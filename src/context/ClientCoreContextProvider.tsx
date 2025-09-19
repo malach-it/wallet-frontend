@@ -18,11 +18,23 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
       wallet_url: OPENID4VCI_REDIRECT_URI,
       httpClient,
 			clientStateStore,
+			dpop_ttl_seconds: 60,
 			// TEMP
 			static_clients: [{
 				issuer: "http://issuer.localhost:8003",
 				client_id: "CLIENT123",
-				client_secret: "superSecretString"
+				client_secret: "superSecretString",
+				redirect_uri: OPENID4VCI_REDIRECT_URI,
+			}, {
+				issuer: "http://wallet-enterprise-issuer:8003",
+				client_id: "CLIENT123",
+				client_secret: "superSecretString",
+				redirect_uri: OPENID4VCI_REDIRECT_URI,
+			}, {
+				issuer: "http://wwwallet-issuer-poc:5000",
+				client_id: "CLIENT123",
+				client_secret: "321TNEILC",
+				redirect_uri: OPENID4VCI_REDIRECT_URI,
 			}]
     });
   }, [httpClient, clientStateStore]);
