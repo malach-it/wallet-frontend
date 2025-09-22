@@ -15,6 +15,7 @@ import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
 import { useOpenID4VCIHelper } from "@/lib/services/OpenID4VCIHelper";
 import useClientCore from "@/hooks/useClientCore";
+import useErrorDialog from "@/hooks/useErrorDialog";
 import {
 	authorizeHandlerFactory,
 	credentialOfferHandlerFactory,
@@ -25,7 +26,6 @@ import {
 } from "./handlers";
 import { type StepHandlers } from "./resources";
 
-const MessagePopup = React.lazy(() => import('../../components/Popups/MessagePopup'));
 const PinInputPopup = React.lazy(() => import('../../components/Popups/PinInput'));
 
 export const UriHandler = ({ children }) => {
@@ -45,6 +45,7 @@ export const UriHandler = ({ children }) => {
 	const { openID4VP } = useContext(OpenID4VPContext);
 	const openID4VCIHelper = useOpenID4VCIHelper();
 	const core = useClientCore();
+	const { displayError } = useErrorDialog();
 
 	const { handleCredentialOffer, generateAuthorizationRequest, handleAuthorizationResponse } = openID4VCI;
 	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
@@ -52,9 +53,6 @@ export const UriHandler = ({ children }) => {
 	const [showSyncPopup, setSyncPopup] = useState<boolean>(false);
 	const [textSyncPopup, setTextSyncPopup] = useState<{ description: string }>({ description: "" });
 
-	const [showMessagePopup, setMessagePopup] = useState<boolean>(false);
-	const [textMessagePopup, setTextMessagePopup] = useState<{ title: string, description: string }>({ title: "", description: "" });
-	const [typeMessagePopup, setTypeMessagePopup] = useState<string>("");
 	const { t } = useTranslation();
 
 	const [redirectUri, setRedirectUri] = useState(null);
@@ -149,10 +147,8 @@ export const UriHandler = ({ children }) => {
 				openID4VP,
 				vcEntityList,
 				t,
+				displayError,
 				setUsedRequestUris,
-				setMessagePopup,
-				setTypeMessagePopup,
-				setTextMessagePopup,
 				setRedirectUri,
 			}),
 			"presentation_success": presentationSuccessHandlerFactory({
@@ -163,9 +159,7 @@ export const UriHandler = ({ children }) => {
 			"protocol_error": errorHandlerFactory({
 				url,
 				isLoggedIn,
-				setMessagePopup,
-				setTypeMessagePopup,
-				setTextMessagePopup,
+				displayError,
 			}),
 			"credential_request": credentialRequestHandlerFactory({ api, keystore, core }),
 		}
@@ -183,7 +177,14 @@ export const UriHandler = ({ children }) => {
 				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
 			}
 		}).catch(err => {
-			if (err instanceof OauthError) logger.error("Oauth error:", jsonToLog(err));
+			if (err instanceof OauthError) {
+				logger.error("Oauth error:", jsonToLog(err));
+				displayError({
+					title: "Oauth error:",
+					description: err.error_description,
+					err,
+				});
+			}
 			else logger.error(err);
 		})
 
@@ -225,9 +226,6 @@ export const UriHandler = ({ children }) => {
 			{children}
 			{showPinInputPopup &&
 				<PinInputPopup isOpen={showPinInputPopup} setIsOpen={setShowPinInputPopup} />
-			}
-			{showMessagePopup &&
-				<MessagePopup type={typeMessagePopup} message={textMessagePopup} onClose={() => setMessagePopup(false)} />
 			}
 			{showSyncPopup &&
 				<SyncPopup message={textSyncPopup}

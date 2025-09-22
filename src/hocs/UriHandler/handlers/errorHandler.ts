@@ -1,18 +1,14 @@
+import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
 import { type HandlerFactoryResponse } from "../resources";
 
 export type ErrorHandlerFactoryConfig = {
 	url: string
 	isLoggedIn: boolean;
-	setMessagePopup: React.Dispatch<React.SetStateAction<boolean>>
-	setTypeMessagePopup: React.Dispatch<React.SetStateAction<string>>
-	setTextMessagePopup: React.Dispatch<React.SetStateAction<{
-    title: string;
-    description: string;
-	}>>;
+	displayError: DisplayErrorFunction;
 }
 
 export function errorHandlerFactory(config: ErrorHandlerFactoryConfig): HandlerFactoryResponse {
-	const { url, isLoggedIn, setMessagePopup, setTypeMessagePopup, setTextMessagePopup } = config;
+	const { url, isLoggedIn, displayError } = config;
 
 	return async function errorHandler({}) {
 		const urlParams = new URLSearchParams(window.location.search);
@@ -22,9 +18,7 @@ export function errorHandlerFactory(config: ErrorHandlerFactoryConfig): HandlerF
 		if (url && isLoggedIn && state && error) {
 			window.history.replaceState({}, '', `${window.location.pathname}`);
 			const errorDescription = urlParams.get('error_description');
-			setTextMessagePopup({ title: error, description: errorDescription });
-			setTypeMessagePopup('error');
-			setMessagePopup(true);
+			displayError({ title: error, description: errorDescription })
 		}
 	}
 }
