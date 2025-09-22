@@ -1,5 +1,6 @@
 import { useCallback, useRef, useMemo } from 'react';
 import { JWK, KeyLike } from 'jose';
+import { logger } from '@/logger';
 import { useHttpProxy } from '../HttpProxy/HttpProxy';
 import { generateDPoP } from '../../utils/dpop';
 
@@ -123,7 +124,7 @@ export function useTokenRequest() {
 
 		formData.append('redirect_uri', redirectUri.current);
 
-		console.log("Token endpoint headers to send = ", Object.fromEntries(httpHeaders.current))
+		logger.debug("Token endpoint headers to send = ", Object.fromEntries(httpHeaders.current))
 		const response = await httpProxy.post(
 			tokenEndpointURL.current!,
 			formData.toString(),
@@ -132,10 +133,10 @@ export function useTokenRequest() {
 
 		if (response.status !== 200) {
 
-			console.error("Failed token request");
+			logger.error("Failed token request");
 
 			if (response.headers?.['dpop-nonce'] && retries.current < 1) {
-				console.log("Response headers = ", response.headers)
+				logger.debug("Response headers = ", response.headers)
 				retries.current = retries.current + 1;
 				httpHeaders.current.set('dpop-nonce', response.headers['dpop-nonce']);
 				const { dpopPrivateKey, dpopPublicKeyJwk, jti } = dpopParams.current;

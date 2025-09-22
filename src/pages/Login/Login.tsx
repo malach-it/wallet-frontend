@@ -5,6 +5,7 @@ import { GoDeviceMobile, GoKey, GoPasskeyFill, GoTrash } from 'react-icons/go';
 import { AiOutlineUnlock } from 'react-icons/ai';
 import { Trans, useTranslation } from 'react-i18next';
 
+import { logger } from '@/logger';
 import type { CachedUser } from '../../services/LocalStorageKeystore';
 import { calculateByteSize } from '../../util';
 
@@ -378,7 +379,7 @@ const WebauthnSignupLogin = ({
 	};
 
 	const onCancel = () => {
-		console.log("onCancel");
+		logger.debug("onCancel");
 		setInProgress(false);
 		setNeedPrfRetry(false);
 		setPrfRetryAccepted(false);

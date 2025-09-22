@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 
 import * as config from "../config";
+import { logger } from "../logger";
 import { useClearStorages, useLocalStorage, useSessionStorage } from "../hooks/useStorage";
 import { toBase64Url } from "../util";
 import { useIndexedDb } from "../hooks/useIndexedDb";
@@ -197,7 +198,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 
 	const close = useCallback(
 		async (): Promise<void> => {
-			console.log('Keystore Close');
+			logger.debug('Keystore Close');
 			await clearPrivateData(userHandleB64u);
 			await idb.destroy();
 			setCalculatedWalletState(null);
@@ -265,8 +266,8 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				return await keystore.openPrivateData(mainKey, privateData);
 			}
 			catch (err) {
-				console.error(err);
-				console.log("Navigating to login-state to handle JWE decryption failure");
+				logger.error(err);
+				logger.debug("Navigating to login-state to handle JWE decryption failure");
 				const queryParams = new URLSearchParams(window.location.search);
 				queryParams.delete('user');
 				queryParams.delete('sync');
@@ -367,7 +368,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		// initialize calculated wallet state
 		if (mainKey && privateData && calculatedWalletState === null) {
 			openPrivateData().then(([, , newCalculatedWalletState]) => {
-				console.log("Calculated wallet state = ", newCalculatedWalletState);
+				logger.debug("Calculated wallet state = ", newCalculatedWalletState);
 
 				setCalculatedWalletState(newCalculatedWalletState);
 			});

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
-import { Core } from "@wwwallet-private/client-core";
+import { Core, OauthError } from "@wwwallet-private/client-core";
 import { useLocation } from "react-router-dom";
+import { jsonToLog, logger } from "@/logger";
 import checkForUpdates from "../../offlineUpdateSW";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
@@ -14,7 +15,14 @@ import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
 import { useOpenID4VCIHelper } from "@/lib/services/OpenID4VCIHelper";
 import useClientCore from "@/hooks/useClientCore";
-import { authorizeHandlerFactory, credentialOfferHandlerFactory, errorHandlerFactory, presentationHandlerFactory, presentationSuccessHandlerFactory } from "./handlers";
+import {
+	authorizeHandlerFactory,
+	credentialOfferHandlerFactory,
+	credentialRequestHandlerFactory,
+	errorHandlerFactory,
+	presentationHandlerFactory,
+	presentationSuccessHandlerFactory,
+} from "./handlers";
 import { type StepHandlers } from "./resources";
 
 const MessagePopup = React.lazy(() => import('../../components/Popups/MessagePopup'));
@@ -69,7 +77,7 @@ export const UriHandler = ({ children }) => {
 		if (u) {
 			setCachedUser(u);
 		}
-	}, [getCachedUsers, getUserHandleB64u, setCachedUser, cachedUser, isLoggedIn]);
+	}, [getCachedUsers, getUserHandleB64u, setCachedUser, cachedUser, keystore, isLoggedIn]);
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
@@ -102,7 +110,7 @@ export const UriHandler = ({ children }) => {
 		}
 		const params = new URLSearchParams(window.location.search);
 		if (synced === false && getCalculatedWalletState() && params.get('sync') !== 'fail') {
-			console.log("Actually syncing...");
+			logger.debug("Actually syncing...");
 			syncPrivateData(cachedUser).then((r) => {
 				if (!r.ok) {
 					return;
@@ -128,16 +136,38 @@ export const UriHandler = ({ children }) => {
 	}, [redirectUri]);
 
 	useEffect(() => {
-		if (!isLoggedIn || !url || !t || !openID4VCI || !openID4VP || !vcEntityList || !synced) {
+		if (!isLoggedIn) {
 			return;
 		}
 
 		const stepHandlers: StepHandlers = {
-			"pushed_authorization_request": credentialOfferHandlerFactory({ core, url, openID4VCI, openID4VCIHelper }),
+			"authorization_request": credentialOfferHandlerFactory({ core }),
 			"authorize": authorizeHandlerFactory({}),
-			"presentation": presentationHandlerFactory({ core, url, openID4VP, vcEntityList, t, setUsedRequestUris, setMessagePopup, setTypeMessagePopup, setTextMessagePopup, setRedirectUri}),
-			"presentation_success": presentationSuccessHandlerFactory({ url, openID4VCI, setUsedAuthorizationCodes }),
-			"protocol_error": errorHandlerFactory({ url, isLoggedIn, setMessagePopup, setTypeMessagePopup, setTextMessagePopup}),
+			"presentation": presentationHandlerFactory({
+				core,
+				url,
+				openID4VP,
+				vcEntityList,
+				t,
+				setUsedRequestUris,
+				setMessagePopup,
+				setTypeMessagePopup,
+				setTextMessagePopup,
+				setRedirectUri,
+			}),
+			"presentation_success": presentationSuccessHandlerFactory({
+				url,
+				openID4VCI,
+				setUsedAuthorizationCodes,
+			}),
+			"protocol_error": errorHandlerFactory({
+				url,
+				isLoggedIn,
+				setMessagePopup,
+				setTypeMessagePopup,
+				setTextMessagePopup,
+			}),
+			"credential_request": credentialRequestHandlerFactory({ api, keystore, core }),
 		}
 
 		// Bind each handler to stepHandlers so `this` refers to stepHandlers
@@ -152,6 +182,9 @@ export const UriHandler = ({ children }) => {
 				// @ts-expect-error
 				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
 			}
+		}).catch(err => {
+			if (err instanceof OauthError) logger.error("Oauth error:", jsonToLog(err));
+			else logger.error(err);
 		})
 
 
@@ -159,7 +192,7 @@ export const UriHandler = ({ children }) => {
 		// 	const u = new URL(urlToCheck);
 		// 	if (u.searchParams.size === 0) return;
 		// 	// setUrl(window.location.origin);
-		// 	console.log('[Uri Handler]: check', url);
+		// 	logger.debug('[Uri Handler]: check', url);
 
 		// 	if (u.protocol === 'openid-credential-offer' || u.searchParams.get('credential_offer') || u.searchParams.get('credential_offer_uri')) {
 		// 	}
@@ -170,7 +203,9 @@ export const UriHandler = ({ children }) => {
 
 		// }
 		// handle(url);
-	}, [url, t, isLoggedIn, setRedirectUri, vcEntityList, synced]);
+	}, []);
+	// TODO manage hook dependencies
+	// }, [isLoggedIn, api, core, keystore, openID4VCI, openID4VP, t, url, vcEntityList]);
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);

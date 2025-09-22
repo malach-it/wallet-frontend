@@ -2,6 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { Err, Ok, Result } from 'ts-results';
 
 import * as config from '../config';
+import { logger } from '@/logger';
 import { fromBase64Url, jsonParseTaggedBinary, jsonStringifyTaggedBinary, toBase64Url } from '../util';
 import { EncryptedContainer, makeAssertionPrfExtensionInputs, parsePrivateData, serializePrivateData } from '../services/keystore';
 import { CachedUser, LocalStorageKeystore } from '../services/LocalStorageKeystore';
@@ -154,7 +155,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 		options?: { appToken?: string },
 		forceIndexDB: boolean = false
 	): Promise<AxiosResponse> => {
-		console.log(`Get: ${path} ${isOnline ? 'online' : 'offline'} mode ${isOnline}`);
+		logger.debug(`Get: ${path} ${isOnline ? 'online' : 'offline'} mode ${isOnline}`);
 
 		// Offline case
 		if (!isOnline && !EXCLUDED_INDEXEDDB_PATHS.has(path)) {
@@ -211,7 +212,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 			// getExternalEntity('/issuer/all') on credentialContext
 			// getCredentialIssuerMetadata() on credentialContext
 		} catch (error) {
-			console.error('Failed to perform get requests', error);
+			logger.error('Failed to perform get requests', error);
 		}
 	}, [get, getExternalEntity]);
 
@@ -299,7 +300,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 
 		await addItem('users', response.data.uuid, response.data);
 		if (isOnline) {
-			await fetchInitialData(response.data.appToken, response.data.uuid).catch((error) => console.error('Error in performGetRequests', error));
+			await fetchInitialData(response.data.appToken, response.data.uuid).catch((error) => logger.error('Error in performGetRequests', error));
 		}
 	}, [setAppToken, setSessionState, fetchInitialData, isOnline]);
 
@@ -314,13 +315,13 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 			if (updateResp.status === 204) {
 				return;
 			} else {
-				console.error("Failed to update private data", updateResp.status, updateResp);
+				logger.error("Failed to update private data", updateResp.status, updateResp);
 				return Promise.reject(updateResp);
 			}
 		} catch (e) {
-			console.error("Failed to update private data", e, e?.response?.status);
+			logger.error("Failed to update private data", e, e?.response?.status);
 			if ((e?.response?.status === 412 && (e?.headers ?? {})['x-private-data-etag']) || (e.cause === 'x-private-data-etag')) {
-				console.error("Private data version conflict", { cause: 'x-private-data-etag' });
+				logger.error("Private data version conflict", { cause: 'x-private-data-etag' });
 				const cachedUser = cachedUsers.filter((u) => u.userHandleB64u === userHandle)[0];
 				await syncPrivateData(cachedUser);
 				return;
@@ -346,7 +347,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 						await updatePrivateData(newPrivateData, { appToken: response.data.appToken });
 						await keystoreCommit();
 					} catch (e) {
-						console.error("Failed to upgrade password key", e, e.status);
+						logger.error("Failed to upgrade password key", e, e.status);
 						if (e?.cause === 'x-private-data-etag') {
 							return Err('x-private-data-etag');
 						}
@@ -356,12 +357,12 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 				await setSession(response, null, 'login');
 				return Ok.EMPTY;
 			} catch (e) {
-				console.error("Failed to unlock local keystore", e);
+				logger.error("Failed to unlock local keystore", e);
 				return Err(e);
 			}
 
 		} catch (error) {
-			console.error('Failed to log in', error);
+			logger.error('Failed to log in', error);
 			return Err(error);
 		}
 	}, [post, setSession, updatePrivateDataEtag, updatePrivateData]);
@@ -387,12 +388,12 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 				return Ok.EMPTY;
 
 			} catch (e) {
-				console.error("Signup failed", e);
+				logger.error("Signup failed", e);
 				return Err(e);
 			}
 
 		} catch (e) {
-			console.error("Failed to initialize local keystore", e);
+			logger.error("Failed to initialize local keystore", e);
 			return Err(e);
 		}
 	}, [post, setSession, updatePrivateDataEtag]);
@@ -401,11 +402,11 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 		try {
 			const result = await getExternalEntity('/verifier/all', undefined, true);
 			const verifiers = result.data;
-			console.log("verifiers = ", verifiers)
+			logger.debug("verifiers = ", verifiers)
 			return verifiers;
 		}
 		catch (error) {
-			console.error("Failed to fetch all verifiers", error);
+			logger.error("Failed to fetch all verifiers", error);
 			throw error;
 		}
 	}, [getExternalEntity]);
@@ -416,7 +417,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 			return result.data; // Return the Axios response.
 		}
 		catch (error) {
-			console.error("Failed to fetch all presentations", error);
+			logger.error("Failed to fetch all presentations", error);
 			throw error;
 		}
 	}, [get]);
@@ -431,7 +432,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 			return { redirect_to };
 		}
 		catch (error) {
-			console.error("Failed to fetch all verifiers", error);
+			logger.error("Failed to fetch all verifiers", error);
 			throw error;
 		}
 	}, [post]);
@@ -465,7 +466,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 			// return await loginWebauthn(keystore, promptForPrfRetry, cachedUser);
 		}
 		catch (err) {
-			console.error(err);
+			logger.error(err);
 			return Err('syncFailed');
 		}
 
@@ -491,7 +492,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 			}> => {
 				if (isOnline) {
 					const beginResp = await post('/user/login-webauthn-begin', {});
-					console.log("begin", beginResp);
+					logger.debug("begin", beginResp);
 					return beginResp.data;
 				}
 				else {
@@ -579,7 +580,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 								await updatePrivateData(newPrivateData, { appToken: finishResp.data.appToken });
 								await keystoreCommit();
 							} catch (e) {
-								console.error("Failed to upgrade PRF key", e, e.status);
+								logger.error("Failed to upgrade PRF key", e, e.status);
 								if (e?.cause === 'x-private-data-etag') {
 									return Err('x-private-data-etag');
 								}
@@ -589,7 +590,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 						await setSession(finishResp, credential, 'login');
 						return Ok.EMPTY;
 					} catch (e) {
-						console.error("Failed to open keystore", e);
+						logger.error("Failed to open keystore", e);
 						return Err('loginKeystoreFailed');
 					}
 
@@ -615,7 +616,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 	): Promise<Result<void, SignupWebauthnError>> => {
 		try {
 			const beginData = retryFrom?.beginData || (await post('/user/register-webauthn-begin', {})).data;
-			console.log("begin", beginData);
+			logger.debug("begin", beginData);
 
 			try {
 				const prfSalt = crypto.getRandomValues(new Uint8Array(32))
@@ -639,7 +640,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 					},
 				}) as PublicKeyCredential;
 				const response = credential.response as AuthenticatorAttestationResponse;
-				console.log("created", credential);
+				logger.debug("created", credential);
 
 				try {
 					const privateData = await keystore.initPrf(

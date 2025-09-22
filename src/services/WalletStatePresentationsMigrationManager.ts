@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react"
 import { WalletBaseStateCredential, WalletBaseStatePresentation, WalletSessionEvent, WalletStateOperations } from "./WalletStateOperations";
 import { LocalStorageKeystore } from "./LocalStorageKeystore";
+import { logger } from "@/logger";
 import { BackendApi } from "@/api";
 import { WalletStateUtils } from "./WalletStateUtils";
 import { fromBase64 } from "@/util";
@@ -24,7 +25,7 @@ export function useWalletStatePresentationsMigrationManager(keystore: LocalStora
 		if (!isLoggedIn || migrated.current || keystore.getCalculatedWalletState() === null) {
 			return;
 		}
-		console.log("State = ", keystore.getCalculatedWalletState().presentations)
+		logger.debug("State = ", keystore.getCalculatedWalletState().presentations)
 		if (keystore.getCalculatedWalletState().presentations.length > 0) {
 			migrated.current = true;
 			return;
@@ -71,12 +72,12 @@ export function useWalletStatePresentationsMigrationManager(keystore: LocalStora
 
 
 		});
-		console.log("Transformed presentations = ", transformedVpEntities)
+		logger.debug("Transformed presentations = ", transformedVpEntities)
 		const [{ }, newPrivateData, keystoreCommit] = await keystore.addPresentations(transformedVpEntities);
 		await api.updatePrivateData(newPrivateData);
 		await keystoreCommit();
 		migrated.current = true;
-		console.log("Successfully migrated presentations");
+		logger.debug("Successfully migrated presentations");
 		// receive all stored credentials from wallet-backend-server
 		// update WalletStateContainer (PrivateData)
 		// after successful update, delete all stored presentations from wallet-backend-server
@@ -85,7 +86,7 @@ export function useWalletStatePresentationsMigrationManager(keystore: LocalStora
 	useEffect(() => {
 		if (api && keystore && isOnline && !migrated.current) {
 			migrateVerifiablePresentationsTable();
-			console.log("migrating credentials...")
+			logger.debug("migrating credentials...")
 		}
 	}, [api, keystore, isOnline]);
 
