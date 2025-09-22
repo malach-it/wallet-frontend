@@ -1,4 +1,4 @@
-import { DISPLAY_CONSOLE, LOG_LEVEL } from "./config";
+import { DISPLAY_CONSOLE, ENVIRONMENT, LOG_LEVEL } from "./config";
 
 export type LogLevel = "error" | "info" | "warn" | "debug";
 
@@ -19,8 +19,8 @@ export class Logger {
 		for (const [index, logLevel] of this.logLevels.entries()) {
 			if (index <= this.logLevels.indexOf(this.level)) {
 				this.group[logLevel] = Function.prototype.bind.call(
-					console.group, 
-					console, 
+					console.group,
+					console,
 					...this.logPrefix(logLevel),
 				);
 
@@ -39,8 +39,8 @@ export class Logger {
 
 	logPrefix(level: string) {
 		let prefix = `%c[${level}]%c`;
-		
-		if (!DISPLAY_CONSOLE) {
+
+		if (ENVIRONMENT === "prod") {
 			prefix += ` ${new Date().toISOString()} | `;
 		}
 		return [prefix, `color: ${this.levelColors[level]}; font-weight: bold;`, ""];

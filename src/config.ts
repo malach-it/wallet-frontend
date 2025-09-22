@@ -1,7 +1,9 @@
 export type DidKeyVersion = "p256-pub" | "jwk_jcs-pub";
+export type Environment = "prod" | "staging" | "dev"
 
 export const APP_VERSION = import.meta.env.VITE_APP_VERSION;
 
+export const ENVIRONMENT = (import.meta.env.VITE_ENVIRONMENT || "prod") as Environment;
 export const LOG_LEVEL = import.meta.env.VITE_LOG_LEVEL;
 export const BACKEND_URL = import.meta.env.VITE_WALLET_BACKEND_URL;
 export const DID_KEY_VERSION: DidKeyVersion = import.meta.env.VITE_DID_KEY_VERSION as DidKeyVersion;
