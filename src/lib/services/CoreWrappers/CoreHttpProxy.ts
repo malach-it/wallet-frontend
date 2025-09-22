@@ -7,6 +7,18 @@ export function useCoreHttpProxy() {
 		get: async <T>(url: string) => {
 			const response = await httpProxy.get(url);
 
+			if (!response) {
+				throw new Error("No reponse from http proxy");
+			}
+
+			if (String(response.status).startsWith("4")) {
+				throw new Error("Invalid request");
+			}
+
+			if (String(response.status).startsWith("5")) {
+				throw new Error("Server error");
+			}
+
 			return {
 				data: response.data as T
 			};
@@ -15,6 +27,18 @@ export function useCoreHttpProxy() {
 		post: async <T>(url: string, body: any, config: any) => {
 			// Figure out how this should be done, search params or object...
 			const response = await httpProxy.post(url, body, config.headers);
+
+			if (!response) {
+				throw new Error("No reponse from http proxy");
+			}
+
+			if (String(response.status).startsWith("4")) {
+				throw new Error("Invalid request");
+			}
+
+			if (String(response.status).startsWith("5")) {
+				throw new Error("Server error");
+			}
 
 			return {
 				data: response.data as T
