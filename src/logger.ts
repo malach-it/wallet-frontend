@@ -56,7 +56,7 @@ export class Logger {
 	debug(...args) {}
 }
 
-export const logger = new Logger(LOG_LEVEL || "debug");
+export const logger = new Logger(LOG_LEVEL || "info");
 
 window.logger = logger;
 
