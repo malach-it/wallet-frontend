@@ -3,6 +3,7 @@ import { logger } from "@/logger";
 import { type HandlerFactoryResponse } from "../resources";
 import { HandleAuthorizationRequestError, type IOpenID4VP } from "@/lib/interfaces/IOpenID4VP";
 import { TFunction } from "i18next";
+import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
 
 export type PresentationHandlerFactoryConfig = {
 	core: Core;
@@ -10,18 +11,13 @@ export type PresentationHandlerFactoryConfig = {
 	openID4VP: IOpenID4VP;
 	vcEntityList: any[];
 	t: TFunction<"translation", undefined>;
+	displayError: DisplayErrorFunction;
 	setUsedRequestUris: React.Dispatch<React.SetStateAction<string[]>>;
-	setMessagePopup: React.Dispatch<React.SetStateAction<boolean>>
-	setTypeMessagePopup: React.Dispatch<React.SetStateAction<string>>
-	setTextMessagePopup: React.Dispatch<React.SetStateAction<{
-    title: string;
-    description: string;
-	}>>;
 	setRedirectUri: React.Dispatch<any>
 }
 
 export function presentationHandlerFactory(config: PresentationHandlerFactoryConfig): HandlerFactoryResponse {
-	const { core, url, openID4VP, vcEntityList, t, setUsedRequestUris, setMessagePopup, setTypeMessagePopup, setTextMessagePopup, setRedirectUri } = config;
+	const { core, url, openID4VP, vcEntityList, t, displayError, setUsedRequestUris, setRedirectUri } = config;
 
 	return async function presentationHandler({}) {
 		const u = new URL(url)
@@ -32,14 +28,16 @@ export function presentationHandlerFactory(config: PresentationHandlerFactoryCon
 
 			if ('error' in result) {
 				if (result.error === HandleAuthorizationRequestError.INSUFFICIENT_CREDENTIALS) {
-					setTextMessagePopup({ title: `${t('messagePopup.insufficientCredentials.title')}`, description: `${t('messagePopup.insufficientCredentials.description')}` });
-					setTypeMessagePopup('error');
-					setMessagePopup(true);
+					displayError({
+						title: `${t('messagePopup.insufficientCredentials.title')}`,
+						description: `${t('messagePopup.insufficientCredentials.description')}`
+					});
 				}
 				else if (result.error === HandleAuthorizationRequestError.NONTRUSTED_VERIFIER) {
-					setTextMessagePopup({ title: `${t('messagePopup.nonTrustedVerifier.title')}`, description: `${t('messagePopup.nonTrustedVerifier.description')}` });
-					setTypeMessagePopup('error');
-					setMessagePopup(true);
+					displayError({
+						title: `${t('messagePopup.nonTrustedVerifier.title')}`,
+						description: `${t('messagePopup.nonTrustedVerifier.description')}`
+					});
 				}
 				return;
 			}

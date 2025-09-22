@@ -7,6 +7,7 @@ import { OpenID4VPContextProvider } from './context/OpenID4VPContextProvider';
 import { OpenID4VCIContextProvider } from './context/OpenID4VCIContextProvider';
 import { UriHandler } from './hocs/UriHandler';
 import { ClientCoreContextProvider } from './context/ClientCoreContextProvider';
+import { ErrorDialogContextProvider } from './context/ErrorDialogContextProvider';
 
 type RootProviderProps = {
 	children: ReactNode;
@@ -20,9 +21,11 @@ const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 					<OpenID4VPContextProvider>
 						<OpenID4VCIContextProvider>
 							<ClientCoreContextProvider>
-								<UriHandler>
-									{children}
-								</UriHandler>
+								<ErrorDialogContextProvider>
+									<UriHandler>
+										{children}
+									</UriHandler>
+								</ErrorDialogContextProvider>
 							</ClientCoreContextProvider>
 						</OpenID4VCIContextProvider>
 					</OpenID4VPContextProvider>
