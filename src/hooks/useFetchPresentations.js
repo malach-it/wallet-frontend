@@ -6,6 +6,7 @@ import CredentialsContext from '@/context/CredentialsContext';
 
 import { CredentialVerificationError } from "wallet-common/dist/error";
 import { VerifiableCredentialFormat } from "wallet-common/dist/types";
+import { logger } from '@/logger';
 
 const useFetchPresentations = (keystore, batchId = null, transactionId = null) => {
 	const [history, setHistory] = useState({});
@@ -13,7 +14,7 @@ const useFetchPresentations = (keystore, batchId = null, transactionId = null) =
 
 	useEffect(() => {
 		const fetchPresentations = async () => {
-			console.log('FetchPresentations');
+			logger.debug('FetchPresentations');
 			try {
 				let presentations = await keystore.getAllPresentations();
 				if (presentations.length === 0) {
@@ -33,7 +34,7 @@ const useFetchPresentations = (keystore, batchId = null, transactionId = null) =
 					presentations = presentations.filter((p) =>
 						transactionIds.includes(p.transactionId)
 					);
-					console.log("Presentations = ", presentations)
+					logger.debug("Presentations = ", presentations)
 					if (presentations.length === 0) {
 						setHistory([]);
 						return;
@@ -79,7 +80,7 @@ const useFetchPresentations = (keystore, batchId = null, transactionId = null) =
 				}, {});
 				setHistory(presentationsGroupedByTransactionId);
 			} catch (error) {
-				console.error('Error fetching presentations:', error);
+				logger.error('Error fetching presentations:', error);
 			}
 		};
 
