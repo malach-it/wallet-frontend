@@ -31,6 +31,11 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
 				client_secret: "superSecretString",
 				redirect_uri: OPENID4VCI_REDIRECT_URI,
 			}, {
+				issuer: "http://issuer2.localhost:5000",
+				client_id: "CLIENT123",
+				client_secret: "321TNEILC",
+				redirect_uri: OPENID4VCI_REDIRECT_URI,
+			}, {
 				issuer: "http://wwwallet-issuer-poc:5000",
 				client_id: "CLIENT123",
 				client_secret: "321TNEILC",
