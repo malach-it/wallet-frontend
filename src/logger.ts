@@ -50,10 +50,10 @@ export class Logger {
 		end() { console.groupEnd() }
 	};
 
-	error(...args) {}
-	info(...args) {}
-	warn(...args) {}
-	debug(...args) {}
+	error(message?: any, ...optionalParams: any[]) {}
+	info(message?: any, ...optionalParams: any[]) {}
+	warn(message?: any, ...optionalParams: any[]) {}
+	debug(message?: any, ...optionalParams: any[]) {}
 }
 
 export const logger = new Logger(LOG_LEVEL);
