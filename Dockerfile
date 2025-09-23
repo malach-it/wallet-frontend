@@ -13,8 +13,8 @@ FROM builder-base AS builder
 WORKDIR /home/node/app
 
 COPY . .
-
-RUN mount=type=secret,id=wallet_frontend_envfile,dst=/home/node/app/.env,required=false NODE_OPTIONS=--max-old-space-size=2048 yarn build
+RUN ls -lah /home/node/app
+RUN --mount=type=secret,id=wallet_frontend_envfile,dst=/home/node/app/.env,required=false NODE_OPTIONS=--max-old-space-size=2048 yarn build
 
 ###
 FROM nginx:alpine AS deploy
