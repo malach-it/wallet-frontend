@@ -13,6 +13,7 @@ import { truncateByWords } from '@/functions/truncateWords';
 import { MdFactCheck } from "react-icons/md";
 import { useCredentialName } from '@/hooks/useCredentialName';
 import i18n from '@/i18n';
+import { logger } from '@/logger';
 
 const SelectableCredentialSlideCard = ({
 	vcEntity,
@@ -216,12 +217,12 @@ function SelectCredentialsPopup({ popupState, setPopupState, showPopup, hidePopu
 				);
 				setVcEntities(filteredVcEntities);
 			} catch (error) {
-				console.error('Failed to fetch data', error);
+				logger.error('Failed to fetch data', error);
 			}
 		};
 
 		if (popupState?.options && vcEntityList) {
-			console.log("opts = ", popupState.options)
+			logger.debug("opts = ", popupState.options)
 			getData();
 		}
 	}, [

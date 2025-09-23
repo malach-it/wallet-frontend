@@ -18,6 +18,7 @@ import useFetchPresentations from '@/hooks/useFetchPresentations';
 // Components
 import HistoryDetailContent from '@/components/History/HistoryDetailContent';
 import { H1 } from '@/components/Shared/Heading';
+import { logger } from '@/logger';
 
 const HistoryDetail = () => {
 	const { transactionId } = useParams();
@@ -29,7 +30,7 @@ const HistoryDetail = () => {
 	const [selectedHistoryItem, setSelectedHistoryItem] = useState([]);
 	const { t } = useTranslation();
 
-	console.log('history', history)
+	logger.debug('history', history)
 
 	useEffect(() => {
 		if (transactionId && history && Object.keys(history).length > 0) {

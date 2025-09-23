@@ -27,7 +27,7 @@ const CredentialImage = ({ vcEntity, className, onClick, showRibbon = true, vcEn
 					setImageSrc(DefaultCred);
 				}
 			} catch (error) {
-				console.warn('Failed to load credential image:', error);
+				logger.warn('Failed to load credential image:', error);
 				if (isMounted) {
 					setImageSrc(DefaultCred);
 					onLoad?.();

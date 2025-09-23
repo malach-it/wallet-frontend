@@ -2,6 +2,7 @@ import { CLOCK_TOLERANCE } from "../config";
 import { IHttpProxy } from "./interfaces/IHttpProxy";
 import { ParsingEngine, SDJWTVCParser, PublicKeyResolverEngine, SDJWTVCVerifier, MsoMdocParser, MsoMdocVerifier } from "wallet-common";
 import { IOpenID4VCIHelper } from "./interfaces/IOpenID4VCIHelper";
+import { logger } from "@/logger";
 
 export async function initializeCredentialEngine(
 	httpProxy: IHttpProxy,
@@ -27,7 +28,7 @@ export async function initializeCredentialEngine(
 			onIssuerMetadataResolved?.(issuerIdentifier);
 		}
 	).catch((err) => {
-		console.error("Failed to fetch issuer metadata asynchronously:", err);
+		logger.error("Failed to fetch issuer metadata asynchronously:", err);
 	});
 
 	const credentialParsingEngine = ParsingEngine();

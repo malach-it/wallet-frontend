@@ -10,6 +10,7 @@ import { toBase64 } from "@/util";
 import { generateRandomIdentifier } from "../utils/generateRandomIdentifier";
 import { VerifiableCredentialFormat } from "wallet-common/dist/types";
 import { WalletStateUtils } from "@/services/WalletStateUtils";
+import { logger } from "@/logger";
 
 export function useMdocAppCommunication(): IMdocAppCommunication {
 	let ephemeralKeyRef = useRef<CryptoKeyPair | null>(null);
@@ -30,7 +31,7 @@ export function useMdocAppCommunication(): IMdocAppCommunication {
 			try {
 				const transactionId = WalletStateUtils.getRandomUint32();
 				const [{ }, newPrivateData, keystoreCommit] = await keystore.addPresentations([presentation].map((vpData, index) => {
-					console.log("Presentation: ")
+					logger.debug("Presentation: ")
 
 					return {
 						transactionId: transactionId,
@@ -41,10 +42,10 @@ export function useMdocAppCommunication(): IMdocAppCommunication {
 				}));
 				await api.updatePrivateData(newPrivateData);
 				await keystoreCommit();
-				console.log("Presentations added")
+				logger.debug("Presentations added")
 
 			} catch (e) {
-				console.log("Failed to reach server: Presentation history not stored");
+				logger.debug("Failed to reach server: Presentation history not stored");
 			}
 		},
 		[post]
@@ -89,10 +90,10 @@ export function useMdocAppCommunication(): IMdocAppCommunication {
 				const client = await window.nativeWrapper.bluetoothCreateClient(uuid);
 				return client;
 			} catch (e) {
-				console.log(e);
+				logger.debug(e);
 				/* @ts-ignore */
-				console.log(await nativeWrapper.bluetoothStatus());
-				console.log("Could not initialize BLE client");
+				logger.debug(await nativeWrapper.bluetoothStatus());
+				logger.debug("Could not initialize BLE client");
 				return false;
 			}
 		}
@@ -103,7 +104,7 @@ export function useMdocAppCommunication(): IMdocAppCommunication {
 		let aggregatedData = [];
 		/* @ts-ignore */
 		if (window.nativeWrapper) {
-			console.log("Created BLE client");
+			logger.debug("Created BLE client");
 			try {
 				let dataReceived = [1];
 				while (dataReceived[0] === 1) {
@@ -113,11 +114,11 @@ export function useMdocAppCommunication(): IMdocAppCommunication {
 					aggregatedData = [...aggregatedData, ...dataReceived.slice(1)];
 				}
 			} catch (e) {
-				console.log("Error receiving");
-				console.log(e);
+				logger.debug("Error receiving");
+				logger.debug(e);
 			}
 		}
-		console.log('Assumed chunk size: ', assumedChunkSize);
+		logger.debug('Assumed chunk size: ', assumedChunkSize);
 		const sessionMessage = uint8ArraytoHexString(new Uint8Array(aggregatedData));
 		const decoded = cborDecode(hexToUint8Array(sessionMessage));
 		const readerKey = decoded.get('eReaderKey');
@@ -148,7 +149,7 @@ export function useMdocAppCommunication(): IMdocAppCommunication {
 		try {
 			decryptedVerifierData = await decryptMessage(skReader, iv, verifierData, true);
 		} catch (e) {
-			console.log(e);
+			logger.debug(e);
 		}
 		const fieldKeys: string[] = [];
 		if (decryptedVerifierData) {

@@ -1,3 +1,4 @@
+import { logger } from '@/logger';
 import {
 	HasherAlgorithm,
 	HasherAndAlgorithm,
@@ -32,7 +33,7 @@ export const parseSdJwtCredential = async (credential: string | object): Promise
 		return { error: "Could not parse SDJWT credential" };
 	}
 	catch (err) {
-		console.error(err);
+		logger.error(err);
 		return { error: "Could not parse SDJWT credential" };
 	}
 

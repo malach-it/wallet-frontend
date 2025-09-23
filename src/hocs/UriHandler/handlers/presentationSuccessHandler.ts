@@ -1,3 +1,4 @@
+import { logger } from "@/logger";
 import { type HandlerFactoryResponse } from "../resources";
 import { IOpenID4VCI } from "@/lib/interfaces/IOpenID4VCI";
 
@@ -15,13 +16,12 @@ export function presentationSuccessHandlerFactory(config: PresentationSuccessHan
 
 		setUsedAuthorizationCodes((codes) => [...codes, u.searchParams.get('code')]);
 
-		console.log("Handling authorization response...");
+		logger.debug("Handling authorization response...");
 		try {
 			await openID4VCI.handleAuthorizationResponse(u.toString());
 		} catch(err) {
-			console.log("Error during the handling of authorization response")
+			logger.error("Error during the handling of authorization response", err);
 			window.history.replaceState({}, '', `${window.location.pathname}`);
-			console.error(err)
 		}
 	}
 }

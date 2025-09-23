@@ -2,6 +2,7 @@ import axios from 'axios';
 import jsonpointer from 'jsonpointer';
 import { formatDate } from '../../functions/DateFormat';
 import customTemplate from '../../assets/images/custom_template.svg';
+import { logger } from '@/logger';
 
 async function getBase64Image(url) {
 	if (!url) return null;
@@ -16,7 +17,7 @@ async function getBase64Image(url) {
 			reader.readAsDataURL(blob);
 		});
 	} catch (error) {
-		console.error("Failed to load image", url);
+		logger.error("Failed to load image", url);
 		return null;
 	}
 }
@@ -54,7 +55,7 @@ const renderCustomSvgTemplate = async ({ beautifiedForm, name, description, logo
 
 		return `data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}`;
 	} catch (error) {
-		console.error("Error rendering SVG template", error);
+		logger.error("Error rendering SVG template", error);
 		return null;
 	}
 };

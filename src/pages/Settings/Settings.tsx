@@ -22,6 +22,7 @@ import { H1, H2, H3 } from '../../components/Shared/Heading';
 import PageDescription from '../../components/Shared/PageDescription';
 import LanguageSelector from '../../components/LanguageSelector/LanguageSelector';
 import { GoDeviceMobile, GoKey, GoPasskeyFill } from 'react-icons/go';
+import { logger } from '@/logger';
 
 function useWebauthnCredentialNickname(credential: WebauthnCredential): string {
 	const { t } = useTranslation();
@@ -115,7 +116,7 @@ const WebauthnRegistation = ({
 			setPendingCredential(null);
 
 			const beginResp = await api.post('/user/session/webauthn/register-begin', {});
-			console.log("begin", beginResp);
+			logger.debug("begin", beginResp);
 			const beginData = beginResp.data;
 
 			if (beginData.challengeId) {
@@ -131,10 +132,10 @@ const WebauthnRegistation = ({
 
 				try {
 					const credential = await navigator.credentials.create(createOptions);
-					console.log("created", credential);
+					logger.debug("created", credential);
 					setPendingCredential(credential);
 				} catch (e) {
-					console.error("Failed to register", e);
+					logger.error("Failed to register", e);
 					setBeginData(null);
 					setPendingCredential(null);
 				}
@@ -145,7 +146,7 @@ const WebauthnRegistation = ({
 	);
 
 	const onCancel = () => {
-		console.log("onCancel");
+		logger.debug("onCancel");
 		setPendingCredential(null);
 		setBeginData(null);
 		setNeedPrfRetry(false);
@@ -156,7 +157,7 @@ const WebauthnRegistation = ({
 
 	const onFinish = async (event) => {
 		event.preventDefault();
-		console.log("onFinish", event);
+		logger.debug("onFinish", event);
 
 		if (beginData && pendingCredential && unwrappingKey && wrappedMainKey) {
 			try {
@@ -198,7 +199,7 @@ const WebauthnRegistation = ({
 				await keystoreCommit();
 
 			} catch (e) {
-				console.error("Failed to finish registration", e);
+				logger.error("Failed to finish registration", e);
 				if (e?.cause === 'x-private-data-etag') {
 					// TODO: Show this error to the user
 					throw new Error("Private data version conflict", { cause: e });
@@ -208,7 +209,7 @@ const WebauthnRegistation = ({
 				onCancel();
 			}
 		} else {
-			console.error("Invalid state:", beginData, pendingCredential, unwrappingKey, wrappedMainKey);
+			logger.error("Invalid state:", beginData, pendingCredential, unwrappingKey, wrappedMainKey);
 		}
 	};
 
@@ -749,7 +750,7 @@ const Settings = () => {
 			await logout();
 		}
 		catch (err) {
-			console.log('Error = ', err)
+			logger.debug('Error = ', err)
 		}
 	}
 
@@ -772,11 +773,11 @@ const Settings = () => {
 					...response.data,
 					settings: s.settings,
 				};
-				console.log(userData);
+				logger.debug(userData);
 				setUserData(userData);
 				dispatchEvent(new CustomEvent("settingsChanged"));
 			} catch (error) {
-				console.error('Failed to fetch data', error);
+				logger.error('Failed to fetch data', error);
 			}
 		},
 		[
@@ -802,12 +803,12 @@ const Settings = () => {
 			if (deleteResp.status === 204) {
 				await keystoreCommit();
 			} else {
-				console.error("Failed to delete WebAuthn credential", deleteResp.status, deleteResp);
+				logger.error("Failed to delete WebAuthn credential", deleteResp.status, deleteResp);
 			}
 			await refreshData();
 
 		} catch (e) {
-			console.error("Failed to delete WebAuthn credential", e);
+			logger.error("Failed to delete WebAuthn credential", e);
 			if (e?.cause === 'x-private-data-etag') {
 				// TODO: Show this error to the user
 				throw new Error("Private data version conflict", { cause: e });
@@ -824,7 +825,7 @@ const Settings = () => {
 		if (deleteResp.status === 204) {
 			return true;
 		} else {
-			console.error("Failed to rename WebAuthn credential", deleteResp.status, deleteResp);
+			logger.error("Failed to rename WebAuthn credential", deleteResp.status, deleteResp);
 			return false;
 		}
 	};
@@ -851,16 +852,16 @@ const Settings = () => {
 				await api.updatePrivateData(newPrivateData);
 				await keystoreCommit();
 			} catch (e) {
-				console.error("Failed to upgrade PRF key", e, e.status);
+				logger.error("Failed to upgrade PRF key", e, e.status);
 			}
 		} catch (e) {
-			console.error("Failed to upgrade PRF key", e);
+			logger.error("Failed to upgrade PRF key", e);
 			if (e?.cause === 'x-private-data-etag') {
 				// TODO: Show this error to the user
 				throw new Error("Private data version conflict", { cause: e });
 			}
 
-			console.error("Failed to upgrade PRF key", e);
+			logger.error("Failed to upgrade PRF key", e);
 			setUpgradePrfState(state => ({ state: "err", err: e, prfKeyInfo, webauthnCredential: state?.webauthnCredential }));
 		}
 	};
@@ -886,14 +887,14 @@ const Settings = () => {
 			await api.updatePrivateData(newPrivateData);
 			await keystoreCommit();
 
-			console.log('Settings updated successfully');
+			logger.debug('Settings updated successfully');
 			setSuccessMessage(t('pageSettings.rememberIssuer.successMessage'));
 			setTimeout(() => {
 				setSuccessMessage('');
 			}, 3000);
 			refreshData();
 		} catch (error) {
-			console.error('Failed to update settings', error);
+			logger.error('Failed to update settings', error);
 		}
 	};
 

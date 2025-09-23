@@ -1,5 +1,6 @@
 import { cborEncode, getCborEncodeDecodeOptions, setCborEncodeDecodeOptions } from "@auth0/mdl/lib/cbor";
 import { DataItem } from "@auth0/mdl";
+import { logger } from "@/logger";
 
 export async function createSessionKey(rawPublic: ArrayBuffer, ephemeralKey: CryptoKeyPair) : Promise<CryptoKey> {
 	const importedVerifierPublicKey = await crypto.subtle.importKey(
@@ -35,8 +36,7 @@ export async function encryptMessage(sessionKey, plaintext, iv=null) {
 	if (!iv) {
 		iv = crypto.getRandomValues(new Uint8Array(12));
 	} else {
-		console.log('using iv:');
-		console.log(iv);
+		logger.debug('using iv:', iv);
 	}
 
 	const ciphertext = await crypto.subtle.encrypt(
@@ -58,8 +58,7 @@ export async function encryptUint8Array(sessionKey, arr, iv=null) {
 	if (!iv) {
 		iv = crypto.getRandomValues(new Uint8Array(12));
 	} else {
-		console.log('using iv:');
-		console.log(iv);
+		logger.debug('using iv:', iv);
 	}
 
 	const ciphertext = await crypto.subtle.encrypt(

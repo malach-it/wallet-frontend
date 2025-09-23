@@ -9,6 +9,7 @@ import { useSessionStorage } from '../../hooks/useStorage';
 import StatusContext from '@/context/StatusContext';
 import SessionContext from '@/context/SessionContext';
 import * as config from '../../config';
+import { logger } from '@/logger';
 
 
 type PrivateRouteContextValue = {
@@ -175,7 +176,7 @@ const PrivateRoute = ({ children }: { children?: React.ReactNode }): React.React
 					setIsPermissionGranted(true);
 				}
 			} catch (error) {
-				console.error('Error requesting notification permission:', error);
+				logger.error('Error requesting notification permission:', error);
 			}
 		};
 
@@ -194,13 +195,13 @@ const PrivateRoute = ({ children }: { children?: React.ReactNode }): React.React
 						if (fcmToken !== null) {
 							await api.post('/user/session/fcm_token/add', { fcm_token: fcmToken });
 							setTokenSentInSession(true);
-							console.log('FCM Token send:', fcmToken);
+							logger.debug('FCM Token send:', fcmToken);
 						} else {
-							console.log('FCM Token failed to get fcmtoken in private route', fcmToken);
+							logger.warn('FCM Token failed to get fcmtoken in private route', fcmToken);
 							setTokenSentInSession(false);
 						}
 					} catch (error) {
-						console.error('Error sending FCM token to the backend:', error);
+						logger.error('Error sending FCM token to the backend:', error);
 					} finally {
 						setLoading(false);
 					}
@@ -229,7 +230,7 @@ const PrivateRoute = ({ children }: { children?: React.ReactNode }): React.React
 			const decodedState = JSON.parse(atob(state));
 			return cachedUsers.some(user => user.userHandleB64u === decodedState.userHandleB64u);
 		} catch (error) {
-			console.error('Error decoding state:', error);
+			logger.error('Error decoding state:', error);
 			return false;
 		}
 	};

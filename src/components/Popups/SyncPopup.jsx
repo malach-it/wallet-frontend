@@ -10,6 +10,7 @@ import { useLocation, Navigate, useNavigate } from 'react-router-dom';
 import checkForUpdates from '@/offlineUpdateSW';
 import { GoPasskeyFill } from 'react-icons/go';
 import { MdOutlineSyncLock } from "react-icons/md";
+import { logger } from '@/logger';
 
 const WebauthnLogin = ({
 	filteredUser,
@@ -129,7 +130,7 @@ const SyncPopup = ({ message, onClose }) => {
 				const stateObj = JSON.parse(decodedState);
 				return [cachedUsers.find(user => user.userHandleB64u === stateObj.userHandleB64u), false, authenticated === 'true'];
 			} catch (error) {
-				console.error('Error decoding state:', error);
+				logger.error('Error decoding state:', error);
 			}
 		}
 
