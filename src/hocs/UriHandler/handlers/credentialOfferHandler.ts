@@ -38,7 +38,6 @@ export function credentialOfferHandlerFactory(config: CredentialOfferHandlerFact
 					err,
 				});
 			}
-			throw err
 		}
 	}
 }
