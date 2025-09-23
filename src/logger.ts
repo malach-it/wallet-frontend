@@ -87,6 +87,9 @@ export function jsonToLog(json: any): string {
 							.join('\n');
 				}
 
+				if (value instanceof Error) {
+					return `${indt(indent)}${key}: ${value.message.slice(0, 200)}`;
+				}
 				if (value && typeof value === "object") {
 					return `${indt(indent)}${key}:\n${parse(value, indent + 4)}`;
 				}
@@ -96,5 +99,5 @@ export function jsonToLog(json: any): string {
 			.join('\n');
 	};
 
-	return `\n\n${parse(json)}`
+	return `\n\n${parse(json)}\n\n`
 }

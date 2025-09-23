@@ -12,11 +12,11 @@ export function useCoreHttpProxy() {
 			}
 
 			if (String(response.status).startsWith("4")) {
-				throw new Error("Invalid request");
+				throw new Error(JSON.stringify(response.data));
 			}
 
 			if (String(response.status).startsWith("5")) {
-				throw new Error("Server error");
+				throw new Error(JSON.stringify(response.data));
 			}
 
 			return {
@@ -33,11 +33,11 @@ export function useCoreHttpProxy() {
 			}
 
 			if (String(response.status).startsWith("4")) {
-				throw new Error("Invalid request");
+				throw new Error(JSON.stringify(response.data));
 			}
 
 			if (String(response.status).startsWith("5")) {
-				throw new Error("Server error");
+				throw new Error(JSON.stringify(response.data));
 			}
 
 			return {

@@ -3,6 +3,7 @@ import { createContext } from 'react';
 export type ErrorDialogState = {
 	title: string;
 	description: string;
+	emphasis?: string;
 	err?: Error;
 	onClose?: () => void;
 }

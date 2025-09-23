@@ -178,10 +178,11 @@ export const UriHandler = ({ children }) => {
 			}
 		}).catch(err => {
 			if (err instanceof OauthError) {
-				logger.error("Oauth error:", jsonToLog(err));
+				logger.error(t(`errors.${err.error}`), jsonToLog(err));
 				displayError({
-					title: "Oauth error:",
-					description: err.error_description,
+					title: t(`errors.${err.error}`),
+					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
 					err,
 				});
 			}

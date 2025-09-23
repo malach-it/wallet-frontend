@@ -24,6 +24,7 @@ export const ErrorDialogContextProvider = ({ children }: ErrorDialogContextProvi
 			{error && (
 				<MessagePopup type="error" onClose={onClose} message={{
 					title: error.title,
+					emphasis: error.emphasis,
 					description: error.description,
 				}} />
 			)}
