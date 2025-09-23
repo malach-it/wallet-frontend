@@ -8,15 +8,12 @@ RUN yarn config set cache-folder /root/.yarn
 COPY package.json yarn.lock ./
 RUN --mount=type=cache,target=/root/.yarn yarn install --frozen-lockfile
 
-###
-FROM builder-base AS test
-COPY . .
-# No tests for now
-#RUN npm run vitest
+FROM builder-base AS builder
 
-###
-# Run tests each time
-FROM test AS builder
+WORKDIR /home/node/app
+
+COPY . .
+
 RUN mount=type=secret,id=wallet_frontend_envfile,dst=/home/node/app/.env,required=false NODE_OPTIONS=--max-old-space-size=2048 yarn build
 
 ###
