@@ -17,19 +17,19 @@ const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 	return (
 		<StatusContextProvider>
 			<SessionContextProvider>
-				<CredentialsContextProvider>
-					<OpenID4VPContextProvider>
-						<OpenID4VCIContextProvider>
-							<ClientCoreContextProvider>
-								<ErrorDialogContextProvider>
+				<ErrorDialogContextProvider>
+					<CredentialsContextProvider>
+						<OpenID4VPContextProvider>
+							<OpenID4VCIContextProvider>
+								<ClientCoreContextProvider>
 									<UriHandler>
 										{children}
 									</UriHandler>
-								</ErrorDialogContextProvider>
-							</ClientCoreContextProvider>
-						</OpenID4VCIContextProvider>
-					</OpenID4VPContextProvider>
-				</CredentialsContextProvider>
+								</ClientCoreContextProvider>
+							</OpenID4VCIContextProvider>
+						</OpenID4VPContextProvider>
+					</CredentialsContextProvider>
+				</ErrorDialogContextProvider>
 			</SessionContextProvider>
 		</StatusContextProvider>
 	);
