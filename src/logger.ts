@@ -58,8 +58,9 @@ export class Logger {
 
 export const logger = new Logger(LOG_LEVEL);
 
-window.logger = logger;
-
+if (window !== undefined) {
+	window.logger = logger;
+}
 /**
  * Helper function that translates a json array or object into human
  * readable plain text for logger.
