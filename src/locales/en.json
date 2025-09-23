@@ -71,6 +71,8 @@
 			},
 			"authorization_request": {
 				"description": {
+					"undefined": "You are about to obtain a credential. Before you continue, the issuer requests further authorization.",
+					"authorization_request": "You are about to obtain a credential. Before you continue, the issuer requests further authorization.",
 					"authorize": "You are about to obtain a credential. The issuer requests authentication to gather the required information.",
 					"authorization_challenge": "You are about to obtain a credential. The issuer requests the presentation of a credential to gather the required information."
 				},
