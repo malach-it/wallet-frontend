@@ -1,5 +1,7 @@
+import { TFunction } from "i18next";
 import { calculateJwkThumbprint, decodeJwt, JWK } from "jose";
 import { Core, OauthError } from "@wwwallet-private/client-core";
+import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
 import { type HandlerFactoryResponse } from "../resources";
 import { BackendApi } from '../../../api';
 import { logger, jsonToLog } from "../../../logger";
@@ -10,10 +12,12 @@ export type AuthorizeHandlerFactoryConfig = {
 	keystore: LocalStorageKeystore;
 	api: BackendApi;
 	core: Core;
+	displayError: DisplayErrorFunction;
+	t: TFunction<"translation", undefined>;
 }
 
 export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryConfig): HandlerFactoryResponse {
-	const { core, keystore, api } = config;
+	const { core, keystore, api, displayError, t } = config;
 	return async (params: { access_token: string, state: string, c_nonce: string }) => {
 				const clientState = JSON.parse(localStorage.getItem("clientStates") || '[]')
 						.find((clientState) => {
@@ -69,7 +73,13 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 
 					} catch(err) {
 						if (err instanceof OauthError) {
-							logger.error("OAuth error:", jsonToLog(err));
+							logger.error(t(`errors.${err.error}`), jsonToLog(err));
+							displayError({
+								title: t(`errors.${err.error}`),
+								emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+								description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
+								err,
+							});
 						} else {
 							logger.error(err);
 						}

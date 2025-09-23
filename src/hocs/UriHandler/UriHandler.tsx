@@ -139,7 +139,7 @@ export const UriHandler = ({ children }) => {
 		}
 
 		const stepHandlers: StepHandlers = {
-			"authorization_request": credentialOfferHandlerFactory({ core }),
+			"authorization_request": credentialOfferHandlerFactory({ core, displayError, t }),
 			"authorize": authorizeHandlerFactory({}),
 			"presentation": presentationHandlerFactory({
 				core,
@@ -161,7 +161,7 @@ export const UriHandler = ({ children }) => {
 				isLoggedIn,
 				displayError,
 			}),
-			"credential_request": credentialRequestHandlerFactory({ api, keystore, core }),
+			"credential_request": credentialRequestHandlerFactory({ api, keystore, core, displayError, t }),
 		}
 
 		// Bind each handler to stepHandlers so `this` refers to stepHandlers

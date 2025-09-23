@@ -1,9 +1,13 @@
+import { TFunction } from "i18next";
 import { type Core, OauthError } from "@wwwallet-private/client-core";
 import { type HandlerFactoryResponse } from "../resources";
 import {jsonToLog, logger} from "@/logger";
+import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
 
 export type CredentialOfferHandlerFactoryConfig = {
 	core: Core;
+	displayError: DisplayErrorFunction;
+	t: TFunction<"translation", undefined>;
 }
 
 type PushedAuthorizationRequestMetadata = {
@@ -13,7 +17,7 @@ type PushedAuthorizationRequestMetadata = {
 };
 
 export function credentialOfferHandlerFactory(config: CredentialOfferHandlerFactoryConfig): HandlerFactoryResponse {
-	const { core } = config;
+	const { core, displayError, t } = config;
 
 	return async function credentialOfferHandler({ issuer, credential_configuration_ids, issuer_state}: PushedAuthorizationRequestMetadata) {
 
@@ -25,7 +29,15 @@ export function credentialOfferHandlerFactory(config: CredentialOfferHandlerFact
 
 			this[nextStep](data)
 		} catch (err) {
-			if (err instanceof OauthError) logger.error("OAuth error:", jsonToLog(err));
+			if (err instanceof OauthError) {
+				logger.error(t(`errors.${err.error}`), jsonToLog(err));
+				displayError({
+					title: t(`errors.${err.error}`),
+					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
+					err,
+				});
+			}
 			throw err
 		}
 	}
