@@ -9,6 +9,9 @@
 	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f3f4f6" />
 	<link rel="apple-touch-icon" href="/wallet_192.png">
 	<link rel="manifest" href="/manifest.json" />
+	<link rel="preconnect" href="%VITE_WALLET_BACKEND_URL%" />
+	<link rel="dns-prefetch" href="%VITE_WALLET_BACKEND_URL%" />
+	<link rel="preload" href="/wallet_192.png" as="image" fetchpriority="high" />
 
 	<title>%VITE_STATIC_NAME%</title>
 	<meta name="description" content="%VITE_STATIC_NAME% is a secure web wallet for storing and managing verifiable credentials.">
