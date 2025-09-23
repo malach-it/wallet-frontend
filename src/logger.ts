@@ -40,7 +40,7 @@ export class Logger {
 	logPrefix(level: string) {
 		let prefix = `%c[${level}]%c`;
 
-		if (ENVIRONMENT === "prod") {
+		if (ENVIRONMENT === "production") {
 			prefix += ` ${new Date().toISOString()} | `;
 		}
 		return [prefix, `color: ${this.levelColors[level]}; font-weight: bold;`, ""];
@@ -56,7 +56,7 @@ export class Logger {
 	debug(...args) {}
 }
 
-export const logger = new Logger(LOG_LEVEL || "info");
+export const logger = new Logger(LOG_LEVEL);
 
 window.logger = logger;
 
