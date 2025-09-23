@@ -4,7 +4,9 @@ WORKDIR /home/node/app
 
 # Install dependencies first so rebuild of these layers is only needed when dependencies change
 COPY package.json yarn.lock .
-COPY .env.prod .env
+
+COPY .env.prod* .env
+RUN --mount=type=secret,id=wallet_frontend_envfile,dst=/home/node/app/.env,required=false npm run vitest
 
 RUN apt-get update -y && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
@@ -16,7 +18,8 @@ RUN yarn cache clean -f && yarn install
 FROM builder-base AS test
 
 COPY . .
-COPY .env.prod .env
+COPY .env.prod* .env
+RUN --mount=type=secret,id=wallet_frontend_envfile,dst=/home/node/app/.env,required=false npm run vitest
 RUN npm run vitest
 
 
@@ -26,7 +29,8 @@ FROM builder-base AS builder
 COPY --from=test /home/node/app/package.json /dev/null
 
 COPY . .
-COPY .env.prod .env
+COPY .env.prod* .env
+RUN --mount=type=secret,id=wallet_frontend_envfile,dst=/home/node/app/.env,required=false npm run vitest
 RUN NODE_OPTIONS=--max-old-space-size=3072 yarn build
 
 
