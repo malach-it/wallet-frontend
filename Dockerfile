@@ -12,6 +12,7 @@ RUN apt-get update -y && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/node/app
 # Overwrite wallet-common with the remote master branch
+RUN yarn config set registry https://npm.internal.siros.org
 RUN yarn cache clean -f && yarn install
 
 FROM builder-base AS test
