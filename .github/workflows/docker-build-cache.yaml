@@ -1,0 +1,35 @@
+name: Build and Push Docker Image consisting of npm packages when yarn.lock is updated
+
+on:
+  push:
+    paths:
+      - "yarn.lock"
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract branch name and SHA
+        run: |
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          target: builder-base
+          tags: |
+            ghcr.io/${{ github.repository }}/cache:${{ env.BRANCH }}
+            ghcr.io/${{ github.repository }}/cache:${{ env.SHA }}
+            ${{ env.BRANCH == 'main' && format('ghcr.io/{0}/cache:latest', github.repository) || '' }}
