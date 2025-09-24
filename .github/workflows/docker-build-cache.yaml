@@ -32,4 +32,4 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/cache:${{ env.BRANCH }}
             ghcr.io/${{ github.repository }}/cache:${{ env.SHA }}
-            ${{ env.BRANCH == 'main' && format('ghcr.io/{0}/cache:latest', github.repository) || '' }}
+            ${{ env.BRANCH == 'master' && format('ghcr.io/{0}/cache:latest', github.repository) || '' }}
