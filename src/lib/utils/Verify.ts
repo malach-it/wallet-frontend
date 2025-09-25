@@ -1,3 +1,4 @@
+import { logger } from "@/logger";
 import { DescriptorMapElement, InputDescriptorConstraintFieldType, InputDescriptorType, PresentationSubmission } from "../types/presentationDefinition.type";
 import Ajv from "ajv";
 import { base64url } from "jose";
@@ -22,7 +23,7 @@ export class Verify {
 			json: presentationDefinitionObj,
 		}) as InputDescriptorType[];
 
-		console.log("Descriptors = ", descriptors)
+		logger.debug("Descriptors = ", descriptors)
 		const result = Verify.verifyRequirements(descriptors, vcJwtList);
 		if (!result) {
 			throw new Error("Failed to generate presentation submission");
@@ -98,7 +99,7 @@ export class Verify {
 			for (const p of paths) {
 				const fieldVer = this.verifyField(vcJSON, filter, p)
 				if (!fieldVer) {
-					console.log(`Field verification failed for the field ${field?.name}`)
+					logger.debug(`Field verification failed for the field ${field?.name}`)
 					return false;
 				}
 			}
@@ -117,7 +118,7 @@ export class Verify {
 		// console.log("Path = ", path)
 		// console.log("Json = ", vcJSON)
 		const vcValueByPath = JSONPath({ path: path, json: vcJSON })[0];
-		console.log(`Extracted value for path ${path} : ${vcValueByPath}`);
+		logger.debug(`Extracted value for path ${path} : ${vcValueByPath}`);
 		if (vcValueByPath === undefined) {
 			return false;
 		}

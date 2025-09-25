@@ -3,6 +3,7 @@ import { CredentialKeyPair } from "./keystore";
 import { WalletStateUtils } from "./WalletStateUtils";
 import { JWK } from "jose";
 import { SCHEMA_VERSION, WalletStateMigrations } from "./WalletStateMigrations";
+import { ClientState } from "@wwwallet-private/client-core";
 
 
 export type WalletStateContainer = {
@@ -83,6 +84,7 @@ export type WalletSessionEventSaveCredentialIssuanceSession = {
 
 	credentialIssuerIdentifier: string,
 	state: string,
+	client_state: ClientState,
 	code_verifier: string,
 	credentialConfigurationId: string,
 	tokenResponse?: {
@@ -140,8 +142,10 @@ export type WalletState = {
 
 		credentialIssuerIdentifier: string,
 		state: string,
+		issuer_state?: string;
+		client_state?: ClientState;
 		code_verifier: string,
-		credentialConfigurationId: string,
+		credentialConfigurationId?: string,
 		tokenResponse?: {
 			data: {
 				access_token: string,
@@ -232,6 +236,7 @@ function credentialIssuanceSessionReducer(state: WalletStateCredentialIssuanceSe
 			return state.filter((s) => s.sessionId !== newEvent.sessionId).concat([{
 				sessionId: newEvent.sessionId,
 				state: newEvent.state,
+				client_state: newEvent.client_state,
 				code_verifier: newEvent.code_verifier,
 				credentialConfigurationId: newEvent.credentialConfigurationId,
 				credentialIssuerIdentifier: newEvent.credentialIssuerIdentifier,
@@ -599,6 +604,7 @@ export namespace WalletStateOperations {
 		sessionId: number,
 		credentialIssuerIdentifier: string,
 		state: string,
+		client_state: ClientState,
 		code_verifier: string,
 		credentialConfigurationId: string,
 		tokenResponse?: {
@@ -638,6 +644,7 @@ export namespace WalletStateOperations {
 
 					credentialIssuerIdentifier,
 					state,
+					client_state,
 					code_verifier,
 					credentialConfigurationId,
 					tokenResponse,

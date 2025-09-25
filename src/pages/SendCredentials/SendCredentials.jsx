@@ -8,6 +8,7 @@ import { H1 } from '../../components/Shared/Heading';
 import QueryableList from '../../components/QueryableList/QueryableList';
 import PageDescription from '../../components/Shared/PageDescription';
 import EntityListItem from '@/components/QueryableList/EntityListItem';
+import { logger } from '@/logger';
 
 const SendCredentials = () => {
 	const { isOnline } = useContext(StatusContext);
@@ -24,7 +25,7 @@ const SendCredentials = () => {
 				const fetchedVerifiers = await api.getAllVerifiers();
 				setVerifiers(fetchedVerifiers);
 			} catch (error) {
-				console.error('Error fetching verifiers:', error);
+				logger.error('Error fetching verifiers:', error);
 			}
 		};
 
@@ -47,7 +48,7 @@ const SendCredentials = () => {
 	const handleContinue = () => {
 		setLoading(true);
 
-		console.log('Continue with:', selectedVerifier);
+		logger.debug('Continue with:', selectedVerifier);
 
 		if (selectedVerifier) {
 			window.location.href = selectedVerifier.url;

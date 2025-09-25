@@ -1,0 +1,128 @@
+import { DISPLAY_CONSOLE, ENVIRONMENT, LOG_LEVEL } from "./config";
+
+export type LogLevel = "error" | "info" | "warn" | "debug";
+
+export class Logger {
+	level: LogLevel;
+	logLevels: Array<LogLevel> = ["error", "info", "warn", "debug"];
+
+	levelColors: Record<LogLevel, string> = {
+		error: "#FF5C5C",
+		info: "#4DA6FF",
+		warn: "#FFAA00",
+		debug: "#9E9E9E",
+	}
+
+	constructor(level: LogLevel = "info") {
+		this.level = level;
+
+		for (const [index, logLevel] of this.logLevels.entries()) {
+			if (index <= this.logLevels.indexOf(this.level)) {
+				this.group[logLevel] = this.#bindConsoleMethod(logLevel, "group");
+				this[logLevel] = this.#bindConsoleMethod(logLevel)
+			}
+		}
+	}
+
+	#bindConsoleMethod(logLevel: LogLevel, method?: string) {
+		return Function.prototype.bind.call(
+			console[method ?? logLevel],
+			console,
+			...this.#logPrefix(logLevel)
+		);
+	}
+
+	#logPrefix(level: string) {
+		let prefix = `%c[${level}]%c`;
+
+		if (ENVIRONMENT === "production") {
+			prefix += ` ${new Date().toISOString()} |`;
+		}
+		return [prefix, `color: ${this.levelColors[level]}; font-weight: bold;`, ""];
+	}
+
+	/**
+	 * Replaces the global console.x methods with the logger methods.
+	 *
+	 * `console.log` and `console.debug` are treated the same, meaning all
+	 * "normal" logs will be treated as debug.
+	 */
+	replaceConsoleMethods() {
+		for (let method of Object.keys(console)) {
+			if (typeof console[method] !== "function") {
+				continue;
+			}
+
+			if (method === "log") {
+				method = "debug";
+			}
+
+			const index = this.logLevels.indexOf(<LogLevel>method);
+			if (index >= 0 && index <= this.logLevels.indexOf(this.level)) {
+				console[method] = this.#bindConsoleMethod(this.logLevels[index])
+			} else {
+				console[method] = (message?: any, ...optionalParams: any[]) => {};
+			}
+		}
+	}
+
+	setLevel(logLevel: LogLevel) {
+		this.level = logLevel
+	}
+
+	group: Record<LogLevel & "end", (...args: any[]) => void> = {
+		end() { console.groupEnd() }
+	};
+
+	error(message?: any, ...optionalParams: any[]) {}
+	info(message?: any, ...optionalParams: any[]) {}
+	warn(message?: any, ...optionalParams: any[]) {}
+	debug(message?: any, ...optionalParams: any[]) {}
+}
+
+export const logger = new Logger(LOG_LEVEL);
+
+if (window !== undefined) {
+	window.logger = logger;
+}
+/**
+ * Helper function that translates a json array or object into human
+ * readable plain text for logger.
+ */
+export function jsonToLog(json: any): string {
+	let indt = (i: number) => " ".repeat(i);
+
+	const parse = (input: any, indent: number = 2) => {
+		if (input === null || typeof input !== "object") {
+			return String(input).trim();
+		}
+
+		if (Array.isArray(input)) {
+			return input
+				.map(item => `${indt(indent)}- ${parse(item, indent + 4)}`)
+				.join('\n');
+		}
+
+		return Object.entries(input)
+			.map(([key, value]) => {
+				if (Array.isArray(value)) {
+					return `${indt(indent)}${key}:\n` +
+						value
+							.map(item => `${indt(indent + 4)}- ${parse(item, indent + 8)}`)
+							.join('\n');
+				}
+
+				if (value instanceof Error) {
+					return `${indt(indent)}${key}: ${value.message.slice(0, 200)}`;
+				}
+				if (value && typeof value === "object") {
+					return `${indt(indent)}${key}:\n${parse(value, indent + 4)}`;
+				}
+
+				return `${indt(indent)}${key}: ${String(value).trim()}`;
+			})
+			.join('\n');
+	};
+
+	return `\n\n${parse(json)}\n\n`
+}

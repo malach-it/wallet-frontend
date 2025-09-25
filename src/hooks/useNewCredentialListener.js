@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useRef } from 'react';
 import { onMessageListener } from '../firebase';
 import CredentialsContext from '@/context/CredentialsContext';
+import { logger } from '@/logger';
 
 const useNewCredentialListener = () => {
 	const [notification, setNotification] = useState(() => {
@@ -20,7 +21,7 @@ const useNewCredentialListener = () => {
 
 	useEffect(() => {
 		const listenForNotification = (payload) => {
-			console.log('Notification received:', payload);
+			logger.debug('Notification received:', payload);
 
 			const newNotification = {
 				title: payload?.data?.title,
