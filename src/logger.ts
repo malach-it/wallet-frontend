@@ -18,17 +18,50 @@ export class Logger {
 
 		for (const [index, logLevel] of this.logLevels.entries()) {
 			if (index <= this.logLevels.indexOf(this.level)) {
-				this.group[logLevel] = Function.prototype.bind.call(
-					console.group,
-					console,
-					...this.logPrefix(logLevel),
-				);
+				this.group[logLevel] = this.#bindConsoleMethod(logLevel, "group");
+				this[logLevel] = this.#bindConsoleMethod(logLevel)
+			}
+		}
+	}
 
-				this[logLevel] = Function.prototype.bind.call(
-					console[logLevel],
-					console,
-					...this.logPrefix(logLevel)
-				);
+	#bindConsoleMethod(logLevel: LogLevel, method?: string) {
+		return Function.prototype.bind.call(
+			console[method ?? logLevel],
+			console,
+			...this.#logPrefix(logLevel)
+		);
+	}
+
+	#logPrefix(level: string) {
+		let prefix = `%c[${level}]%c`;
+
+		if (ENVIRONMENT === "production") {
+			prefix += ` ${new Date().toISOString()} |`;
+		}
+		return [prefix, `color: ${this.levelColors[level]}; font-weight: bold;`, ""];
+	}
+
+	/**
+	 * Replaces the global console.x methods with the logger methods.
+	 *
+	 * `console.log` and `console.debug` are treated the same, meaning all
+	 * "normal" logs will be treated as debug.
+	 */
+	replaceConsoleMethods() {
+		for (let method of Object.keys(console)) {
+			if (typeof console[method] !== "function") {
+				continue;
+			}
+
+			if (method === "log") {
+				method = "debug";
+			}
+
+			const index = this.logLevels.indexOf(<LogLevel>method);
+			if (index >= 0 && index <= this.logLevels.indexOf(this.level)) {
+				console[method] = this.#bindConsoleMethod(this.logLevels[index])
+			} else {
+				console[method] = (message?: any, ...optionalParams: any[]) => {};
 			}
 		}
 	}
@@ -37,16 +70,7 @@ export class Logger {
 		this.level = logLevel
 	}
 
-	logPrefix(level: string) {
-		let prefix = `%c[${level}]%c`;
-
-		if (ENVIRONMENT === "production") {
-			prefix += ` ${new Date().toISOString()} | `;
-		}
-		return [prefix, `color: ${this.levelColors[level]}; font-weight: bold;`, ""];
-	}
-
-	group: Record<LogLevel & "end", (...args) => void> = {
+	group: Record<LogLevel & "end", (...args: any[]) => void> = {
 		end() { console.groupEnd() }
 	};
 
