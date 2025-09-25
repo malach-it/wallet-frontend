@@ -1,19 +1,16 @@
-import React, { useEffect, useState, useContext, useRef } from "react";
-import { Core, OauthError } from "@wwwallet-private/client-core";
+import React, { useEffect, useState, useContext } from "react";
+import { OauthError } from "@wwwallet-private/client-core";
 import { useLocation } from "react-router-dom";
 import { jsonToLog, logger } from "@/logger";
-import checkForUpdates from "../../offlineUpdateSW";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
 import { useTranslation } from "react-i18next";
-import { HandleAuthorizationRequestError } from "../../lib/interfaces/IOpenID4VP";
 import OpenID4VCIContext from "../../context/OpenID4VCIContext";
 import OpenID4VPContext from "../../context/OpenID4VPContext";
 import CredentialsContext from "@/context/CredentialsContext";
 import { CachedUser } from "@/services/LocalStorageKeystore";
 import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
-import { useOpenID4VCIHelper } from "@/lib/services/OpenID4VCIHelper";
 import useClientCore from "@/hooks/useClientCore";
 import useErrorDialog from "@/hooks/useErrorDialog";
 import {
@@ -43,11 +40,9 @@ export const UriHandler = ({ children }) => {
 
 	const { openID4VCI } = useContext(OpenID4VCIContext);
 	const { openID4VP } = useContext(OpenID4VPContext);
-	const openID4VCIHelper = useOpenID4VCIHelper();
 	const core = useClientCore();
 	const { displayError } = useErrorDialog();
 
-	const { handleCredentialOffer, generateAuthorizationRequest, handleAuthorizationResponse } = openID4VCI;
 	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
 
 	const [showSyncPopup, setSyncPopup] = useState<boolean>(false);
