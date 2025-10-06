@@ -1,15 +1,32 @@
-import { useCallback, useContext, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { logger } from '@/logger';
 import type { ClientState, ClientStateStore } from '@wwwallet-private/client-core'
 import SessionContext from '@/context/SessionContext';
 import { generateRandomIdentifier } from '@/lib/utils/generateRandomIdentifier';
 import pkceChallenge from 'pkce-challenge';
 import { exportJWK, generateKeyPair } from 'jose';
+import { WalletStateUtils } from '@/services/WalletStateUtils';
+import { WalletStateCredentialIssuanceSession } from '@/services/WalletStateOperations';
 
 const CLIENT_STATE_KEY = "clientStates"
 
 export function useCoreClientStateStore(): ClientStateStore {
-	const { keystore } = useContext(SessionContext);
+	const { keystore, api } = useContext(SessionContext);
+
+	const sessions = useRef(new Map<number, WalletStateCredentialIssuanceSession>());
+
+	useEffect(() => {
+		if (keystore && sessions.current.size === 0) {
+			const S = keystore.getCalculatedWalletState();
+			if (!S) {
+				return;
+			}
+			S.credentialIssuanceSessions.map((session) => {
+				sessions.current.set(session.sessionId, session);
+			});
+			logger.debug("Loaded Credential Issuance Sessions from keystore = ", Array.from(sessions.current.values()));
+		}
+	}, [keystore]);
 
 	const create = useCallback<ClientStateStore["create"]>(
 		async (issuer, issuer_state) => {
@@ -21,10 +38,10 @@ export function useCoreClientStateStore(): ClientStateStore {
 				})
 			).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
-				const { code_verifier } = await pkceChallenge()
+			const { code_verifier } = await pkceChallenge();
 
 			const { publicKey, privateKey } = await generateKeyPair("ES256", { extractable: true });
-			const clientState = {
+			const client_state: ClientState = {
 				issuer,
 				issuer_state,
 				state,
@@ -36,76 +53,75 @@ export function useCoreClientStateStore(): ClientStateStore {
 						...await exportJWK(privateKey)
 					},
 				},
+				context: WalletStateUtils.getRandomUint32(),
 			}
 
-			if (!clientState.issuer_state?.length) {
-				clientState.issuer_state = 'issuer_state'
+			if (!client_state.issuer_state?.length) {
+				client_state.issuer_state = 'issuer_state'
 			}
 
-			return clientState;
-		}, []);
+			return client_state;
+		}, [keystore]);
+
+	const getByCredentialIssuerIdentifierAndCredentialConfigurationId = useCallback(async (
+		credentialIssuer: string,
+		credentialConfigurationId: string
+	): Promise<WalletStateCredentialIssuanceSession | null> => {
+		const r = Array.from(sessions.current.values()).filter((S) => S.credentialConfigurationId === credentialConfigurationId && S.credentialIssuerIdentifier === credentialIssuer);
+		const res = r[r.length-1];
+		return res ? res : null;
+	},
+		[]
+	);
 
 	const commitChanges = useCallback<ClientStateStore["commitChanges"]>(
 		async (clientState: ClientState): Promise<ClientState> => {
-				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
+			const existingState = await getByCredentialIssuerIdentifierAndCredentialConfigurationId(
+				clientState.issuer,
+				clientState.credential_configuration_ids[0]
+			);
 
-				let found = false;
-				const newClientStates = JSON.parse(rawClientStates).map(
-					(oldClientState) => {
-						if (
-							oldClientState.state === clientState.state &&
-							oldClientState.issuer === clientState.issuer &&
-							oldClientState.issuer_state === clientState.issuer_state
-						) {
-							found = true
-							return clientState
-						}
-						return oldClientState;
-					}
-				)
+			if (existingState) {
+				sessions.current.delete(existingState.sessionId);
+			}
 
-				if (!found) {
-					newClientStates.push(clientState)
-				}
+			sessions.current.set(<number>clientState.context, {
+				sessionId: <number>clientState.context,
+				credentialIssuerIdentifier: clientState.issuer,
+				state: clientState.state,
+				issuer_state: clientState.issuer_state,
+				client_state: clientState,
+				code_verifier: clientState.code_verifier,
+				created: Math.floor(Date.now() / 1000),
+			})
 
-				localStorage.setItem(CLIENT_STATE_KEY, JSON.stringify(newClientStates.slice(0, 24)))
+			const [{ }, newPrivateData, keystoreCommit] = await keystore.saveCredentialIssuanceSessions(Array.from(sessions.current.values()));
+			await api.updatePrivateData(newPrivateData);
+			await keystoreCommit();
 
-				return clientState;
+
+			console.trace();
+
+			return clientState;
 		},
-		[]
+		[api, keystore]
 	)
 
 	const fromIssuerState = useCallback<ClientStateStore["fromIssuerState"]>(
 		async (issuer, issuer_state): Promise<ClientState> => {
-				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
-
-				const clientStates = JSON.parse(rawClientStates).filter(
-					({ issuer: e, issuer_state: f }) => {
-						return e === issuer && f === (issuer_state || 'issuer_state')
-					}
-				)
-				const clientState = clientStates[clientStates.length - 1]
-
-				if (!clientState) {
-					throw new Error("could not find client state")
-				}
-
-				return clientState;
+			const r = Array.from(sessions.current.values()).filter((S) => S.issuer_state === issuer_state);
+			const res = r[r.length-1];
+			return res && res.client_state ? res.client_state : null;
 		},
 		[]
 	)
 
 	const fromState = useCallback<ClientStateStore["fromState"]>(
 			async (state): Promise<ClientState> => {
-				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
-
-				const clientState = JSON.parse(rawClientStates).find(({ state: e }) => e === state)
-
-				if (!clientState) {
-					throw new Error("could not find client state")
-				}
-
-				return clientState;
+				console.log(Array.from(sessions.current.values()))
+				const r = Array.from(sessions.current.values()).filter((S) => S.state === state);
+				const res = r[r.length-1];
+				return res && res.client_state ? res.client_state : null;
 			},
 			[]
 	)
