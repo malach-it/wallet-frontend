@@ -18,6 +18,7 @@ export const INACTIVE_LOGOUT_MILLIS = (import.meta.env.VITE_INACTIVE_LOGOUT_SECO
 export const LOGIN_WITH_PASSWORD: boolean = import.meta.env.VITE_LOGIN_WITH_PASSWORD ? JSON.parse(import.meta.env.VITE_LOGIN_WITH_PASSWORD) === true : false;
 export const WEBAUTHN_RPID = import.meta.env.VITE_WEBAUTHN_RPID ?? "localhost";
 export const WS_URL = import.meta.env.VITE_WS_URL;
+export const CORE_CONFIGURATION = import.meta.env.VITE_CORE_CONFIGURATION
 export const OPENID4VP_SAN_DNS_CHECK = import.meta.env.VITE_OPENID4VP_SAN_DNS_CHECK ? import.meta.env.VITE_OPENID4VP_SAN_DNS_CHECK === 'true' : false;
 export const OPENID4VP_SAN_DNS_CHECK_SSL_CERTS = import.meta.env.VITE_OPENID4VP_SAN_DNS_CHECK_SSL_CERTS ? import.meta.env.VITE_OPENID4VP_SAN_DNS_CHECK_SSL_CERTS === 'true' : false;
 export const VALIDATE_CREDENTIALS_WITH_TRUST_ANCHORS = import.meta.env.VITE_VALIDATE_CREDENTIALS_WITH_TRUST_ANCHORS ? import.meta.env.VITE_VALIDATE_CREDENTIALS_WITH_TRUST_ANCHORS  === 'true' : false;

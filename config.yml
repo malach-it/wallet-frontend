@@ -33,3 +33,19 @@ wallet:
   multi_language_display: true
   static_public_url: *wallet_url
   static_name: wwWallet
+  core_configuration:
+    wallet_url: *wallet_url
+    dpop_ttl_seconds: 60
+    static_clients:
+    - issuer: "http://issuer.localhost:8003"
+      client_id: "CLIENT123"
+      client_secret: "superSecretString"
+      redirect_uri: *wallet_url
+    - issuer: "http://wallet-enterprise-issuer:8003"
+      client_id: "CLIENT123"
+      client_secret: "superSecretString"
+      redirect_uri: *wallet_url
+    - issuer: "http://wwwallet-issuer-poc:5000"
+      client_id: "CLIENT123"
+      client_secret: "321TNEILC"
+      redirect_uri: *wallet_url
