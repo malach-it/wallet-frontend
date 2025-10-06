@@ -22,10 +22,11 @@ import {
 	presentationSuccessHandlerFactory,
 } from "./handlers";
 import { type StepHandlers } from "./resources";
+import Spinner from "@/components/Shared/Spinner";
 
 const PinInputPopup = React.lazy(() => import('../../components/Popups/PinInput'));
 
-export const UriHandler = ({ children }) => {
+export const UriHandler = () => {
 	const { updateOnlineStatus, isOnline } = useContext(StatusContext);
 
 	const [usedAuthorizationCodes, setUsedAuthorizationCodes] = useState<string[]>([]);
@@ -219,7 +220,7 @@ export const UriHandler = ({ children }) => {
 
 	return (
 		<>
-			{children}
+			<Spinner/>
 			{showPinInputPopup &&
 				<PinInputPopup isOpen={showPinInputPopup} setIsOpen={setShowPinInputPopup} />
 			}

@@ -15,6 +15,7 @@ import UpdateNotification from './components/Notifications/UpdateNotification';
 import CredentialDetails from './pages/Home/CredentialDetails';
 import useNewCredentialListener from './hooks/useNewCredentialListener';
 import BackgroundNotificationClickHandler from './components/Notifications/BackgroundNotificationClickHandler';
+import { UriHandler } from './hocs/UriHandler';
 
 const reactLazyWithNonDefaultExports = (load, ...names) => {
 	const nonDefaults = (names ?? []).map(name => {
@@ -97,27 +98,31 @@ function App() {
 					<Routes>
 						<Route element={
 							<PrivateRoute>
-								<Layout>
-									<Suspense fallback={<Spinner size='small' />}>
-										<PrivateRoute.NotificationPermissionWarning />
-										<FadeInContentTransition appear reanimateKey={location.pathname}>
-											<Outlet />
-										</FadeInContentTransition>
-									</Suspense>
-								</Layout>
+								<Outlet />
 							</PrivateRoute>
 						}>
-							<Route path="/settings" element={<Settings />} />
-							<Route path="/" element={<Home />} />
-							<Route path="/credential/:batchId" element={<Credential />} />
-							<Route path="/credential/:batchId/history" element={<CredentialHistory />} />
-							<Route path="/credential/:batchId/details" element={<CredentialDetails />} />
-							<Route path="/history" element={<History />} />
-							<Route path="/history/:transactionId" element={<HistoryDetail />} />
-							<Route path="/add" element={<AddCredentials />} />
-							<Route path="/send" element={<SendCredentials />} />
-							<Route path="/verification/result" element={<VerificationResult />} />
-							<Route path="/cb/*" element={<Home />} />
+							<Route path="/cb/*" element={<UriHandler />} />
+							<Route element={
+									<Layout>
+										<Suspense fallback={<Spinner size='small' />}>
+											<PrivateRoute.NotificationPermissionWarning />
+											<FadeInContentTransition appear reanimateKey={location.pathname}>
+												<Outlet />
+											</FadeInContentTransition>
+										</Suspense>
+									</Layout>
+							}>
+								<Route path="/settings" element={<Settings />} />
+								<Route path="/" element={<Home />} />
+								<Route path="/credential/:batchId" element={<Credential />} />
+								<Route path="/credential/:batchId/history" element={<CredentialHistory />} />
+								<Route path="/credential/:batchId/details" element={<CredentialDetails />} />
+								<Route path="/history" element={<History />} />
+								<Route path="/history/:transactionId" element={<HistoryDetail />} />
+								<Route path="/add" element={<AddCredentials />} />
+								<Route path="/send" element={<SendCredentials />} />
+								<Route path="/verification/result" element={<VerificationResult />} />
+							</Route>
 						</Route>
 						<Route element={
 							<FadeInContentTransition reanimateKey={location.pathname}>
