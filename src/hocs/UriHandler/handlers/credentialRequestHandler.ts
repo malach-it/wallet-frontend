@@ -18,14 +18,14 @@ export type AuthorizeHandlerFactoryConfig = {
 
 export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryConfig): HandlerFactoryResponse {
 	const { core, keystore, api, displayError, t } = config;
-	return async (params: { access_token: string, state: string, c_nonce: string }) => {
-				const clientState = JSON.parse(localStorage.getItem("clientStates") || '[]')
-						.find((clientState) => {
-							return clientState.state === params.state
-						})
+	return async function credentialRequestHanlder(params: { access_token: string, state: string, c_nonce: string }) {
+
+				const clientState = await core.config.clientStateStore.fromState(params.state);
+				console.log(clientState)
+
 				const credential_configuration_ids = clientState
 						?.credential_configuration_ids || []
-				const audience = clientState.issuer_metadata.issuer
+				const audience = clientState.issuer
 				const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience)?.client_id
 
 				for (const credential_configuration_id of credential_configuration_ids) {
@@ -42,7 +42,7 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 						// await api.updatePrivateData(proofsData);
 						// await proofsCommit()
 
-						const { data: { credentials } } = await core.credential({
+						const { data: { credentials }, nextStep } = await core.credential({
 							...params,
 							credential_configuration_id,
 							proofs: {
@@ -59,7 +59,7 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 									format: "vc+sd-jwt",
 									kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
 									credentialConfigurationId: credential_configuration_id,
-									credentialIssuerIdentifier: clientState.issuer_metadata.issuer,
+									credentialIssuerIdentifier: clientState.issuer,
 									batchId,
 									instanceId: index,
 								}
@@ -70,7 +70,7 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 						await api.updatePrivateData(credentialsData);
 						await credentialsCommit();
 
-
+						this[nextStep]({});
 					} catch(err) {
 						if (err instanceof OauthError) {
 							logger.error(t(`errors.${err.error}`), jsonToLog(err));

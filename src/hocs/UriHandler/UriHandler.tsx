@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { OauthError } from "@wwwallet-private/client-core";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { jsonToLog, logger } from "@/logger";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
@@ -17,6 +17,7 @@ import {
 	authorizeHandlerFactory,
 	credentialOfferHandlerFactory,
 	credentialRequestHandlerFactory,
+	credentialSuccessHandlerFactory,
 	errorHandlerFactory,
 	presentationHandlerFactory,
 	presentationSuccessHandlerFactory,
@@ -43,6 +44,7 @@ export const UriHandler = () => {
 	const { openID4VP } = useContext(OpenID4VPContext);
 	const core = useClientCore();
 	const { displayError } = useErrorDialog();
+	const navigate = useNavigate();
 
 	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
 
@@ -158,6 +160,7 @@ export const UriHandler = () => {
 				displayError,
 			}),
 			"credential_request": credentialRequestHandlerFactory({ api, keystore, core, displayError, t }),
+			"credential_success": credentialSuccessHandlerFactory({ navigate }),
 		}
 
 		// Bind each handler to stepHandlers so `this` refers to stepHandlers
