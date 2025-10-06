@@ -1,0 +1,54 @@
+import React, { useState, useEffect } from "react";
+import { OauthError } from "@wwwallet-private/client-core";
+import { jsonToLog, logger } from "@/logger";
+
+import { useTranslation } from "react-i18next";
+import useClientCore from "@/hooks/useClientCore";
+import useErrorDialog from "@/hooks/useErrorDialog";
+import MessagePopup from "@/components/Popups/MessagePopup";
+
+export type AuthorizationRequestHandlerParams = {
+	goToStep: (step: string, data: any) => void;
+	data: {
+		issuer: string;
+		credential_configuration_ids: string;
+		issuer_state: string;
+	}
+}
+
+export const AuthorizationRequestHandler = ({ goToStep, data }: AuthorizationRequestHandlerParams) => {
+
+	const {
+		issuer,
+		credential_configuration_ids: credentialConfigurationIds,
+		issuer_state
+	} = data
+	const core = useClientCore();
+	const { displayError } = useErrorDialog();
+	const { t } = useTranslation();
+
+	useEffect(() => {
+		core.authorization({
+			issuer: issuer,
+			issuer_state: issuer_state ?? 'issuer_state',
+		}).then(({ nextStep, data }) => {
+			return goToStep(nextStep, data)
+		}).catch((err) => {
+			if (err instanceof OauthError) {
+				logger.error(t(`errors.${err.error}`), jsonToLog(err));
+				return displayError({
+					title: t(`errors.${err.error}`),
+					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
+					err,
+				});
+			}
+
+			throw err;
+		})
+	}, [core, displayError, t])
+
+	return (
+		<></>
+	)
+}
