@@ -183,6 +183,7 @@ export const UriHandler = () => {
 					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
 					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
 					err,
+					onClose: () => navigate("/"),
 				});
 			}
 			else logger.error(err);
