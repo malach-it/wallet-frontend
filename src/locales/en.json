@@ -89,6 +89,16 @@
 				"invalid_client": "The wallet configuration could not allow the transaction. Please contact your administrator.",
 				"invalid_parameters": "Given issuance parameters are invalid. Please contact your administrator."
 			}
+		},
+		"oid4vp": {
+			"parse_location": {
+				"description": {
+					"presentation": "You are about to present a credential. Your wallet need to extract information from the current location to prepare credentials presentation.",
+					"presentation_success": "You have presented a credential. The verifier notifies the presentation was successful."
+				},
+				"invalid_location": "The wallet could not parse the current location",
+				"invalid_request": "Your wallet has performed a request to the vevrifier that could not be successful. Please contact your administrator for more information"
+			}
 		}
 	},
 	"expiredRibbon": {
