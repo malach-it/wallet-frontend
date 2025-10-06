@@ -7,9 +7,11 @@ describe("The WalletStateOperations", () => {
 		let container: WalletStateContainer = WalletStateOperations.initialWalletStateContainer();
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 1>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 1>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
@@ -20,9 +22,11 @@ describe("The WalletStateOperations", () => {
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 2>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 2>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 		container.S = WalletStateOperations.walletStateReducer(s1, container.events[1]);
@@ -34,9 +38,11 @@ describe("The WalletStateOperations", () => {
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 1>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 1>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
@@ -44,8 +50,9 @@ describe("The WalletStateOperations", () => {
 
 		container = await WalletStateOperations.addDeleteCredentialEvent(
 			container,
-
-			(container.events[0] as any).credentialId,
+			{
+				credentialId: (container.events[0] as any).credentialId,
+			}
 		)
 
 		container.S = WalletStateOperations.walletStateReducer(container.S, container.events[1]);
@@ -57,24 +64,30 @@ describe("The WalletStateOperations", () => {
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 1>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 1>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 2>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 2>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
 
 		container = await WalletStateOperations.addDeleteCredentialEvent(
 			container,
-			(container.events[0] as any).credentialId,
+			{
+				credentialId: (container.events[0] as any).credentialId
+			},
 		);
 
 
@@ -85,18 +98,22 @@ describe("The WalletStateOperations", () => {
 
 		container1 = await WalletStateOperations.addNewCredentialEvent(
 			container1,
-			"<credential session1-a>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential session1-a>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
 
 		container1 = await WalletStateOperations.addNewCredentialEvent(
 			container1,
-			"<credential session1-b>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential session1-b>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
@@ -105,23 +122,29 @@ describe("The WalletStateOperations", () => {
 
 		container2 = await WalletStateOperations.addDeleteCredentialEvent(
 			container2,
-			(container2.events[1] as any).credentialId,
+			{
+				credentialId: (container2.events[1] as any).credentialId,
+			},
 		);
 
 
 		container2 = await WalletStateOperations.addNewCredentialEvent(
 			container2,
-			"<credential session2-x>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential session2-x>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
 		container2 = await WalletStateOperations.addNewCredentialEvent(
 			container2,
-			"<credential session2-y>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential session2-y>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 		const result = findDivergencePoint(container1.events, container2.events);
@@ -135,9 +158,11 @@ describe("The WalletStateOperations", () => {
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 1>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 1>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
@@ -147,9 +172,11 @@ describe("The WalletStateOperations", () => {
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 2>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 2>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 		const e2Hash = await WalletStateUtils.calculateEventHash(container.events[0]);
@@ -168,17 +195,21 @@ describe("The WalletStateOperations", () => {
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 1>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 1>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 
 		container = await WalletStateOperations.addNewCredentialEvent(
 			container,
-			"<credential 2>",
-			"mso_mdoc",
-			""
+			{
+				data: "<credential 2>",
+				format: "mso_mdoc",
+				kid: "",
+			}
 		);
 
 		const e2Hash = await WalletStateUtils.calculateEventHash(container.events[1]);

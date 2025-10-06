@@ -84,9 +84,9 @@ export type WalletSessionEventSaveCredentialIssuanceSession = {
 
 	credentialIssuerIdentifier: string,
 	state: string,
-	client_state: ClientState,
+	client_state?: ClientState,
 	code_verifier: string,
-	credentialConfigurationId: string,
+	credentialConfigurationId?: string,
 	tokenResponse?: {
 		data: {
 			access_token: string,
@@ -455,8 +455,29 @@ export namespace WalletStateOperations {
 		}
 	}
 
-	export async function addNewCredentialEvent(container: WalletStateContainer, data: string, format: string, kid: string, batchId: number = 0, credentialIssuerIdentifier: string = "", credentialConfigurationId = "", instanceId: number = 0, credentialId: number = WalletStateUtils.getRandomUint32()): Promise<WalletStateContainer> {
+	type NewCredentialEventData = {
+		data: string;
+		format: string;
+		kid: string;
+		batchId?: number;
+		credentialIssuerIdentifier?: string;
+		credentialConfigurationId?: string;
+		instanceId?: number;
+		credentialId?: number;
+	}
+
+	export async function addNewCredentialEvent(container: WalletStateContainer, eventData: NewCredentialEventData): Promise<WalletStateContainer> {
+		const data = {
+			batchId: 0,
+			credentialIssuerIdentifier: "",
+			credentialConfigurationId: "",
+			instanceId: 0,
+			credentialId: WalletStateUtils.getRandomUint32(),
+			...eventData,
+		} satisfies Required<NewCredentialEventData>
+
 		await validateEventHistoryContinuity(container);
+
 		const newContainer: WalletStateContainer = {
 			lastEventHash: container.lastEventHash,
 			events: [
@@ -464,14 +485,7 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "new_credential",
-					credentialId: credentialId,
-					data,
-					format,
-					kid,
-					batchId,
-					credentialIssuerIdentifier,
-					credentialConfigurationId,
-					instanceId,
+					...data,
 				},
 			],
 			S: container.S,
@@ -480,8 +494,11 @@ export namespace WalletStateOperations {
 		return newContainer;
 	}
 
+	type DeleteCredentialEventData = {
+		credentialId: number;
+	}
 
-	export async function addDeleteCredentialEvent(container: WalletStateContainer, credentialId: number): Promise<WalletStateContainer> {
+	export async function addDeleteCredentialEvent(container: WalletStateContainer, eventData: DeleteCredentialEventData): Promise<WalletStateContainer> {
 		await validateEventHistoryContinuity(container);
 		const newContainer: WalletStateContainer = {
 			lastEventHash: container.lastEventHash,
@@ -490,7 +507,7 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "delete_credential",
-					credentialId,
+					...eventData,
 				},
 			],
 			S: container.S,
@@ -499,7 +516,12 @@ export namespace WalletStateOperations {
 		return newContainer;
 	}
 
-	export async function addNewKeypairEvent(container: WalletStateContainer, kid: string, keypair: CredentialKeyPair): Promise<WalletStateContainer> {
+	type NewKeypairEventData = {
+		kid: string;
+		keypair: CredentialKeyPair;
+	}
+
+	export async function addNewKeypairEvent(container: WalletStateContainer, eventData: NewKeypairEventData): Promise<WalletStateContainer> {
 		await validateEventHistoryContinuity(container);
 		const newContainer: WalletStateContainer = {
 			lastEventHash: container.lastEventHash,
@@ -508,8 +530,7 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "new_keypair",
-					kid,
-					keypair,
+					...eventData,
 				},
 			],
 			S: container.S,
@@ -518,8 +539,11 @@ export namespace WalletStateOperations {
 		return newContainer;
 	}
 
+	type DeleteKeypairEventData = {
+		kid: string;
+	}
 
-	export async function addDeleteKeypairEvent(container: WalletStateContainer, kid: string): Promise<WalletStateContainer> {
+	export async function addDeleteKeypairEvent(container: WalletStateContainer, eventData: DeleteKeypairEventData): Promise<WalletStateContainer> {
 		await validateEventHistoryContinuity(container);
 		const newContainer: WalletStateContainer = {
 			lastEventHash: container.lastEventHash,
@@ -528,7 +552,7 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "delete_keypair",
-					kid,
+					...eventData,
 				},
 			],
 			S: container.S,
@@ -537,8 +561,21 @@ export namespace WalletStateOperations {
 		return newContainer;
 	}
 
+	type NewPresentationEventData = {
+		presentationId?: number;
+		transactionId: number;
+		data: string;
+		usedCredentialIds: number[],
+		presentationTimestampSeconds: number;
+		audience: string;
+	}
 
-	export async function addNewPresentationEvent(container: WalletStateContainer, transactionId: number, data: string, usedCredentialIds: number[], presentationTimestampSeconds: number, audience: string): Promise<WalletStateContainer> {
+	export async function addNewPresentationEvent(container: WalletStateContainer, eventData: NewPresentationEventData): Promise<WalletStateContainer> {
+		const data = {
+			presentationId: WalletStateUtils.getRandomUint32(),
+			...eventData
+		} satisfies Required<NewPresentationEventData>;
+
 		await validateEventHistoryContinuity(container);
 
 		const newContainer: WalletStateContainer = {
@@ -548,12 +585,7 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "new_presentation",
-					presentationId: WalletStateUtils.getRandomUint32(),
-					transactionId: transactionId,
-					data,
-					usedCredentialIds,
-					presentationTimestampSeconds,
-					audience,
+					...data,
 				},
 			],
 			S: container.S,
@@ -562,8 +594,11 @@ export namespace WalletStateOperations {
 		return newContainer;
 	}
 
+	type DeletePresentationEventData = {
+		presentationId: number
+	}
 
-	export async function addDeletePresentationEvent(container: WalletStateContainer, presentationId: number): Promise<WalletStateContainer> {
+	export async function addDeletePresentationEvent(container: WalletStateContainer, eventData: DeletePresentationEventData): Promise<WalletStateContainer> {
 		await validateEventHistoryContinuity(container);
 		const newContainer: WalletStateContainer = {
 			lastEventHash: container.lastEventHash,
@@ -572,7 +607,7 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "delete_presentation",
-					presentationId,
+					...eventData,
 				},
 			],
 			S: container.S,
@@ -581,7 +616,11 @@ export namespace WalletStateOperations {
 		return newContainer;
 	}
 
-	export async function addAlterSettingsEvent(container: WalletStateContainer, settings: Record<string, string>): Promise<WalletStateContainer> {
+	type AlterSettingsEventData = {
+		settings: Record<string, string>
+	}
+
+	export async function addAlterSettingsEvent(container: WalletStateContainer, eventData: AlterSettingsEventData): Promise<WalletStateContainer> {
 		await validateEventHistoryContinuity(container);
 		const newContainer: WalletStateContainer = {
 			lastEventHash: container.lastEventHash,
@@ -590,7 +629,7 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "alter_settings",
-					settings: settings,
+					...eventData,
 				},
 			],
 			S: container.S,
@@ -599,14 +638,14 @@ export namespace WalletStateOperations {
 		return newContainer;
 	}
 
-
-	export async function addSaveCredentialIssuanceSessionEvent(container: WalletStateContainer,
+	type SaveCredentialIssuanceSessionEventData = {
 		sessionId: number,
 		credentialIssuerIdentifier: string,
 		state: string,
-		client_state: ClientState,
+		client_state?: ClientState,
+		issuer_state?: string;
 		code_verifier: string,
-		credentialConfigurationId: string,
+		credentialConfigurationId?: string,
 		tokenResponse?: {
 			data: {
 				access_token: string,
@@ -629,7 +668,9 @@ export namespace WalletStateOperations {
 			auth_session: string,
 		},
 		created?: number
-	): Promise<WalletStateContainer> {
+	}
+
+	export async function addSaveCredentialIssuanceSessionEvent(container: WalletStateContainer, eventData: SaveCredentialIssuanceSessionEventData): Promise<WalletStateContainer> {
 
 		await validateEventHistoryContinuity(container);
 
@@ -640,17 +681,8 @@ export namespace WalletStateOperations {
 				{
 					...await createWalletSessionEvent(container),
 					type: "save_credential_issuance_session",
-					sessionId: sessionId,
-
-					credentialIssuerIdentifier,
-					state,
-					client_state,
-					code_verifier,
-					credentialConfigurationId,
-					tokenResponse,
-					dpop,
-					firstPartyAuthorization,
-					created: created ?? Math.floor(Date.now() / 1000),
+					...eventData,
+					created: eventData.created ?? Math.floor(Date.now() / 1000),
 				},
 			],
 			S: container.S,
