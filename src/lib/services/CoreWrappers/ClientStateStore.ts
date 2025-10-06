@@ -8,7 +8,9 @@ import { exportJWK, generateKeyPair } from 'jose';
 import { WalletStateUtils } from '@/services/WalletStateUtils';
 import { WalletStateCredentialIssuanceSession } from '@/services/WalletStateOperations';
 
-const CLIENT_STATE_KEY = "clientStates"
+type Context = {
+	sessionId: number;
+}
 
 export function useCoreClientStateStore(): ClientStateStore {
 	const { keystore, api } = useContext(SessionContext);
@@ -53,7 +55,9 @@ export function useCoreClientStateStore(): ClientStateStore {
 						...await exportJWK(privateKey)
 					},
 				},
-				context: WalletStateUtils.getRandomUint32(),
+				context: {
+					sessionId: WalletStateUtils.getRandomUint32()
+				},
 			}
 
 			if (!client_state.issuer_state?.length) {
@@ -85,8 +89,8 @@ export function useCoreClientStateStore(): ClientStateStore {
 				sessions.current.delete(existingState.sessionId);
 			}
 
-			sessions.current.set(<number>clientState.context, {
-				sessionId: <number>clientState.context,
+			sessions.current.set((<Context>clientState.context).sessionId, {
+				sessionId: (<Context>clientState.context).sessionId,
 				credentialIssuerIdentifier: clientState.issuer,
 				state: clientState.state,
 				issuer_state: clientState.issuer_state,
