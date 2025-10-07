@@ -67,15 +67,14 @@ export function useCoreClientStateStore(): ClientStateStore {
 			return client_state;
 		}, [keystore]);
 
-	const getByCredentialIssuerIdentifierAndCredentialConfigurationId = useCallback(async (
-		credentialIssuer: string,
-		credentialConfigurationId: string
-	): Promise<WalletStateCredentialIssuanceSession | null> => {
-		const r = Array.from(sessions.current.values()).filter((S) => S.credentialConfigurationId === credentialConfigurationId && S.credentialIssuerIdentifier === credentialIssuer);
-		const res = r[r.length-1];
-		return res ? res : null;
-	},
-		[]
+	const getSessionByFilter = useCallback(
+		async (filters: Partial<WalletStateCredentialIssuanceSession>): Promise<WalletStateCredentialIssuanceSession | null> => {
+			const matches = Array.from(sessions.current.values()).filter(session =>
+				Object.entries(filters).every(([key, value]) => session[key] === value)
+			);
+			return matches.pop() ?? null;
+		},
+		[sessions]
 	);
 
 	const getRememberIssuerAge = useCallback(async (): Promise<number | null> => {
@@ -113,10 +112,10 @@ export function useCoreClientStateStore(): ClientStateStore {
 			// TODO: Expose this to be triggered in more optimal place
 			await cleanupExpired();
 
-			const existingState = await getByCredentialIssuerIdentifierAndCredentialConfigurationId(
-				clientState.issuer,
-				clientState.credential_configuration_ids[0]
-			);
+			const existingState = await getSessionByFilter({
+				credentialIssuerIdentifier: clientState.issuer,
+				credentialConfigurationId: clientState.credential_configuration_ids[0],
+			});
 
 			if (existingState) {
 				sessions.current.delete(existingState.sessionId);
@@ -147,22 +146,25 @@ export function useCoreClientStateStore(): ClientStateStore {
 
 	const fromIssuerState = useCallback<ClientStateStore["fromIssuerState"]>(
 		async (issuer, issuer_state): Promise<ClientState> => {
-			const r = Array.from(sessions.current.values()).filter((S) => S.issuer_state === issuer_state);
-			const res = r[r.length-1];
-			return res && res.client_state ? res.client_state : null;
+			const session = await getSessionByFilter({
+				issuer_state,
+			});
+
+			return session?.client_state ?? null;
 		},
-		[]
-	)
+		[getSessionByFilter]
+	);
 
 	const fromState = useCallback<ClientStateStore["fromState"]>(
-			async (state): Promise<ClientState> => {
-				console.log(Array.from(sessions.current.values()))
-				const r = Array.from(sessions.current.values()).filter((S) => S.state === state);
-				const res = r[r.length-1];
-				return res && res.client_state ? res.client_state : null;
-			},
-			[]
-	)
+		async (state): Promise<ClientState> => {
+			const session = await getSessionByFilter({
+				state,
+			});
+
+			return session?.client_state ?? null;
+		},
+		[getSessionByFilter]
+	);
 
 	const setCredentialConfigurationIds = useCallback<ClientStateStore["setCredentialConfigurationIds"]>(
 		async (clientState, credentialConfigurationIds): Promise<ClientState> => {
