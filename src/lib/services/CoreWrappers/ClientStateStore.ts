@@ -78,8 +78,41 @@ export function useCoreClientStateStore(): ClientStateStore {
 		[]
 	);
 
+	const getRememberIssuerAge = useCallback(async (): Promise<number | null> => {
+		if (!keystore) {
+			return null;
+		}
+		const S = keystore.getCalculatedWalletState();
+		if (!S) {
+			return null;
+		}
+		return parseInt(S.settings['openidRefreshTokenMaxAgeInSeconds']);
+	}, [keystore]);
+
+	// TODO: Expose this to be triggered in more optimal place
+	const cleanupExpired = useCallback(async (): Promise<void> => {
+		const rememberIssuerForSeconds = await getRememberIssuerAge();
+		logger.debug("Rememeber issuer for seconds = ", rememberIssuerForSeconds)
+
+		if (rememberIssuerForSeconds == null) {
+			return;
+		}
+		for (const res of Array.from(sessions.current.values())) {
+			logger.debug("Res i: ", res);
+			if (res.created &&
+				typeof res.created === 'number' &&
+				Math.floor(Date.now() / 1000) > res.created + rememberIssuerForSeconds) {
+				logger.debug("Removed session id = ", res.sessionId)
+				sessions.current.delete(res.sessionId);
+			}
+		}
+	}, [getRememberIssuerAge]);
+
 	const commitChanges = useCallback<ClientStateStore["commitChanges"]>(
 		async (clientState: ClientState): Promise<ClientState> => {
+			// TODO: Expose this to be triggered in more optimal place
+			await cleanupExpired();
+
 			const existingState = await getByCredentialIssuerIdentifierAndCredentialConfigurationId(
 				clientState.issuer,
 				clientState.credential_configuration_ids[0]
