@@ -468,12 +468,12 @@ export namespace WalletStateOperations {
 
 	export async function addNewCredentialEvent(container: WalletStateContainer, eventData: NewCredentialEventData): Promise<WalletStateContainer> {
 		const data = {
-			batchId: 0,
-			credentialIssuerIdentifier: "",
-			credentialConfigurationId: "",
-			instanceId: 0,
-			credentialId: WalletStateUtils.getRandomUint32(),
 			...eventData,
+			batchId: eventData.batchId ?? 0,
+			credentialIssuerIdentifier: eventData.credentialIssuerIdentifier ?? "",
+			credentialConfigurationId: eventData.credentialConfigurationId ?? "",
+			instanceId: eventData.instanceId ?? 0,
+			credentialId: eventData.credentialId ?? WalletStateUtils.getRandomUint32(),
 		} satisfies Required<NewCredentialEventData>
 
 		await validateEventHistoryContinuity(container);
