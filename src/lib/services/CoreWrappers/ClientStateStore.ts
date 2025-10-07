@@ -92,6 +92,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 			sessions.current.set((<Context>clientState.context).sessionId, {
 				sessionId: (<Context>clientState.context).sessionId,
 				credentialIssuerIdentifier: clientState.issuer,
+				credentialConfigurationId: clientState.credential_configuration_ids[0],
 				state: clientState.state,
 				issuer_state: clientState.issuer_state,
 				client_state: clientState,
