@@ -7,6 +7,7 @@ import { BackendApi } from '../../../api';
 import { logger, jsonToLog } from "../../../logger";
 import type { LocalStorageKeystore } from '../../../services/LocalStorageKeystore';
 import { WalletStateUtils } from "../../../services/WalletStateUtils";
+import { useEffect, useState } from "react";
 
 export type AuthorizeHandlerFactoryConfig = {
 	keystore: LocalStorageKeystore;
@@ -18,6 +19,35 @@ export type AuthorizeHandlerFactoryConfig = {
 
 export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryConfig): HandlerFactoryResponse {
 	const { core, keystore, api, displayError, t } = config;
+
+	const [credentialsList, setCredentials] = useState([]);
+
+	useEffect(() => {
+		if (credentialsList.length < 1) return;
+
+		(async () => {
+			const batchId = WalletStateUtils.getRandomUint32();
+			const [, credentialsData, credentialsCommit] = await keystore.addCredentials(
+				await Promise.all(credentialsList.map(async ({ credential, format, issuer, id }, index: number) => {
+					const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
+					const res = {
+						data: credential,
+						format,
+						kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
+						credentialConfigurationId: id,
+						credentialIssuerIdentifier: issuer,
+						batchId,
+						instanceId: index,
+					}
+					return res;
+				}))
+			)
+
+			await api.updatePrivateData(credentialsData);
+			await credentialsCommit();
+		})();
+	}, [credentialsList])
+
 	return async function credentialRequestHanlder(params: { access_token: string, state: string, c_nonce: string }) {
 
 				const clientState = await core.config.clientStateStore.fromState(params.state);
@@ -27,8 +57,8 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 				const audience = clientState.issuer;
 				const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience)?.client_id;
 
-				console.trace();
-				alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
+				// console.trace();
+				// alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
 
 
 				for (const credential_configuration_id of credential_configuration_ids) {
@@ -45,10 +75,10 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 						await api.updatePrivateData(proofsData);
 						await proofsCommit()
 
-						console.trace();
-						alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
+						// console.trace();
+						// alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
 
-						await core.config.clientStateStore.cleanupExpired();
+						// await core.config.clientStateStore.cleanupExpired();
 
 						const { data: { credentials }, nextStep } = await core.credential({
 							...params,
@@ -59,31 +89,11 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 						})
 
 
-						console.trace();
-						alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
+						// console.trace();
+						// alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
 
-
-						const batchId = WalletStateUtils.getRandomUint32();
-						const [, credentialsData, credentialsCommit] = await keystore.addCredentials(
-							await Promise.all(credentials.map(async ({ credential, format }, index: number) => {
-								const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
-								const res = {
-									data: credential,
-									format,
-									kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
-									credentialConfigurationId: credential_configuration_id,
-									credentialIssuerIdentifier: clientState.issuer,
-									batchId,
-									instanceId: index,
-								}
-								return res;
-							}))
-						)
-
-						await api.updatePrivateData(credentialsData);
-						await credentialsCommit();
-
-						this[nextStep]({});
+						setCredentials([...credentialsList, ...credentials.map(({ credential, format }) => ({ credential, format, id: credential_configuration_id, issuer: clientState.issuer}))])
+						// this[nextStep]({});
 					} catch(err) {
 						if (err instanceof OauthError) {
 							logger.error(t(`errors.${err.error}`), jsonToLog(err));

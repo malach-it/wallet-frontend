@@ -131,11 +131,9 @@ export const UriHandler = memo(() => {
 		}
 	}, [redirectUri]);
 
-	useEffect(() => {
-		if (!isLoggedIn) {
-			return;
-		}
+	const crq = credentialRequestHandlerFactory({ api, keystore, core, displayError, t });
 
+	useEffect(() => {
 		const stepHandlers: StepHandlers = {
 			"authorization_request": credentialOfferHandlerFactory({ core, displayError, t }),
 			"authorize": authorizeHandlerFactory({}),
@@ -159,7 +157,7 @@ export const UriHandler = memo(() => {
 				isLoggedIn,
 				displayError,
 			}),
-			"credential_request": credentialRequestHandlerFactory({ api, keystore, core, displayError, t }),
+			"credential_request": crq,
 			"credential_success": credentialSuccessHandlerFactory({ navigate }),
 		}
 
