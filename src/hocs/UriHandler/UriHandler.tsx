@@ -1,175 +1,44 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
 import { OauthError } from "@wwwallet-private/client-core";
-import { useLocation } from "react-router-dom";
 import { jsonToLog, logger } from "@/logger";
-import StatusContext from "../../context/StatusContext";
+import { ProtocolData, ProtocolStep } from "./resources";
+
 import SessionContext from "../../context/SessionContext";
+
 import { useTranslation } from "react-i18next";
-import OpenID4VCIContext from "../../context/OpenID4VCIContext";
-import OpenID4VPContext from "../../context/OpenID4VPContext";
-import CredentialsContext from "@/context/CredentialsContext";
-import { CachedUser } from "@/services/LocalStorageKeystore";
-import SyncPopup from "@/components/Popups/SyncPopup";
-import { useSessionStorage } from "@/hooks/useStorage";
 import useClientCore from "@/hooks/useClientCore";
 import useErrorDialog from "@/hooks/useErrorDialog";
+
 import {
-	authorizeHandlerFactory,
-	credentialOfferHandlerFactory,
-	credentialRequestHandlerFactory,
-	errorHandlerFactory,
-	presentationHandlerFactory,
-	presentationSuccessHandlerFactory,
+	AuthorizationRequestHandler,
+	AuthorizeHandler,
+	CredentialRequestHandler,
+	PresentationHandler,
+	PresentationSuccessHandler,
+	ProtocolErrorHandler
 } from "./handlers";
-import { type StepHandlers } from "./resources";
 
-const PinInputPopup = React.lazy(() => import('../../components/Popups/PinInput'));
+type UriHandlerProps = {
+	children: React.ReactNode;
+}
 
-export const UriHandler = ({ children }) => {
-	const { updateOnlineStatus, isOnline } = useContext(StatusContext);
+export const UriHandler = (props: UriHandlerProps) => {
+	const { children } = props
 
-	const [usedAuthorizationCodes, setUsedAuthorizationCodes] = useState<string[]>([]);
-	const [usedRequestUris, setUsedRequestUris] = useState<string[]>([]);
+	const [ currentStep, setStep ] = useState<ProtocolStep>(null);
+	const [ protocolData, setProtocolData ] = useState<ProtocolData>(null);
 
-	const { isLoggedIn, api, keystore, logout } = useContext(SessionContext);
-	const { syncPrivateData } = api;
-	const { getUserHandleB64u, getCachedUsers, getCalculatedWalletState } = keystore;
-
-	const location = useLocation();
-	const [url, setUrl] = useState(window.location.href);
-
-	const { openID4VCI } = useContext(OpenID4VCIContext);
-	const { openID4VP } = useContext(OpenID4VPContext);
 	const core = useClientCore();
+	const { isLoggedIn } = useContext(SessionContext);
 	const { displayError } = useErrorDialog();
-
-	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
-
-	const [showSyncPopup, setSyncPopup] = useState<boolean>(false);
-	const [textSyncPopup, setTextSyncPopup] = useState<{ description: string }>({ description: "" });
-
 	const { t } = useTranslation();
 
-	const [redirectUri, setRedirectUri] = useState(null);
-	const { vcEntityList } = useContext(CredentialsContext);
-
-	const [cachedUser, setCachedUser] = useState<CachedUser | null>(null);
-	const [synced, setSynced] = useState(false);
-	const [latestIsOnlineStatus, setLatestIsOnlineStatus,] = api.useClearOnClearSession(useSessionStorage('latestIsOnlineStatus', null));
-
 	useEffect(() => {
-		if (!keystore || cachedUser !== null || !isLoggedIn) {
-			return;
-		}
-
-		const userHandle = getUserHandleB64u();
-		if (!userHandle) {
-			return;
-		}
-		const u = getCachedUsers().filter((user) => user.userHandleB64u === userHandle)[0];
-		if (u) {
-			setCachedUser(u);
-		}
-	}, [getCachedUsers, getUserHandleB64u, setCachedUser, cachedUser, keystore, isLoggedIn]);
-
-	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		if (window.location.search !== '' && params.get('sync') !== 'fail') {
-			setSynced(false);
-		}
-	}, [location]);
-
-	useEffect(() => {
-		if (latestIsOnlineStatus === false && isOnline === true && cachedUser) {
-			api.syncPrivateData(cachedUser);
-		}
-		if (isLoggedIn) {
-			setLatestIsOnlineStatus(isOnline);
-		} else {
-			setLatestIsOnlineStatus(null);
-		}
-	}, [
-		api,
-		isLoggedIn,
-		isOnline,
-		latestIsOnlineStatus,
-		setLatestIsOnlineStatus,
-		cachedUser
-	]);
-
-	useEffect(() => {
-		if (!getCalculatedWalletState || !cachedUser || !syncPrivateData) {
-			return;
-		}
-		const params = new URLSearchParams(window.location.search);
-		if (synced === false && getCalculatedWalletState() && params.get('sync') !== 'fail') {
-			logger.debug("Actually syncing...");
-			syncPrivateData(cachedUser).then((r) => {
-				if (!r.ok) {
-					return;
-				}
-				setSynced(true);
-				// checkForUpdates();
-				// updateOnlineStatus(false);
-			});
-		}
-
-	}, [cachedUser, synced, setSynced, getCalculatedWalletState, syncPrivateData]);
-
-	useEffect(() => {
-		if (synced === true && window.location.search !== '') {
-			setUrl(window.location.href);
-		}
-	}, [synced, setUrl, location]);
-
-	useEffect(() => {
-		if (redirectUri) {
-			window.location.href = redirectUri;
-		}
-	}, [redirectUri]);
-
-	useEffect(() => {
-		if (!isLoggedIn) {
-			return;
-		}
-
-		const stepHandlers: StepHandlers = {
-			"authorization_request": credentialOfferHandlerFactory({ core, displayError, t }),
-			"authorize": authorizeHandlerFactory({}),
-			"presentation": presentationHandlerFactory({
-				core,
-				url,
-				openID4VP,
-				vcEntityList,
-				t,
-				displayError,
-				setUsedRequestUris,
-				setRedirectUri,
-			}),
-			"presentation_success": presentationSuccessHandlerFactory({
-				url,
-				openID4VCI,
-				setUsedAuthorizationCodes,
-			}),
-			"protocol_error": errorHandlerFactory({
-				url,
-				isLoggedIn,
-				displayError,
-			}),
-			"credential_request": credentialRequestHandlerFactory({ api, keystore, core, displayError, t }),
-		}
-
-		// Bind each handler to stepHandlers so `this` refers to stepHandlers
-		for (const key in stepHandlers) {
-			if (typeof stepHandlers[key] === "function") {
-				stepHandlers[key] = stepHandlers[key].bind(stepHandlers);
-			}
-		}
+		if (!isLoggedIn) return
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
-				// @ts-expect-error
-				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
+				goToStep(presentationRequest.nextStep, presentationRequest.data)
 			}
 		}).catch(err => {
 			if (err instanceof OauthError) {
@@ -183,54 +52,52 @@ export const UriHandler = ({ children }) => {
 			}
 			else logger.error(err);
 		})
+	}, [isLoggedIn, core, displayError, t])
 
+	const authorizationRequestStep = useMemo(() => {
+		return currentStep === "authorization_request"
+	}, [currentStep])
 
-		// async function handle(urlToCheck: string) {
-		// 	const u = new URL(urlToCheck);
-		// 	if (u.searchParams.size === 0) return;
-		// 	// setUrl(window.location.origin);
-		// 	logger.debug('[Uri Handler]: check', url);
+	const authorizeStep = useMemo(() => {
+		return currentStep === "authorize"
+	}, [currentStep])
 
-		// 	if (u.protocol === 'openid-credential-offer' || u.searchParams.get('credential_offer') || u.searchParams.get('credential_offer_uri')) {
-		// 	}
-		// 	else if (u.searchParams.get('code') && !usedAuthorizationCodes.includes(u.searchParams.get('code'))) {
-		// 	}
-		// 	else if (u.searchParams.get('client_id') && u.searchParams.get('request_uri') && !usedRequestUris.includes(u.searchParams.get('request_uri'))) {
-		// 	}
+	const credentialRequestStep = useMemo(() => {
+		return currentStep === "credential_request"
+	}, [currentStep])
 
-		// }
-		// handle(url);
-	}, []);
-	// TODO manage hook dependencies
-	// }, [isLoggedIn, api, core, keystore, openID4VCI, openID4VP, t, url, vcEntityList]);
+	const presentationStep = useMemo(() => {
+		return currentStep === "presentation"
+	}, [currentStep])
 
-	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		if (synced === true && params.get('sync') === 'fail') {
-			setSynced(false);
-		}
-		else if (params.get('sync') === 'fail' && synced === false) {
-			setTextSyncPopup({ description: 'syncPopup.description' });
-			setSyncPopup(true);
-		} else {
-			setSyncPopup(false);
-		}
-	}, [location, t, synced]);
+	const presentationSuccessStep = useMemo(() => {
+		return currentStep === "presentation_success"
+	}, [currentStep])
+
+	const protocolErrorStep = useMemo(() => {
+		return currentStep === "protocol_error"
+	}, [currentStep])
+
+	const goToStep = useCallback((step: ProtocolStep, data: ProtocolData) => {
+		setStep(step)
+		setProtocolData(data)
+	}, [])
 
 	return (
 		<>
+			{authorizationRequestStep &&
+				<AuthorizationRequestHandler goToStep={goToStep} data={protocolData} />}
+			{authorizeStep &&
+				<AuthorizeHandler goToStep={goToStep} data={protocolData} />}
+			{credentialRequestStep &&
+				<CredentialRequestHandler goToStep={goToStep} data={protocolData} />}
+			{presentationStep &&
+				<PresentationHandler goToStep={goToStep} data={protocolData} />}
+			{presentationSuccessStep &&
+				<PresentationSuccessHandler goToStep={goToStep} data={protocolData} />}
+			{protocolErrorStep &&
+				<ProtocolErrorHandler goToStep={goToStep} data={protocolData} />}
 			{children}
-			{showPinInputPopup &&
-				<PinInputPopup isOpen={showPinInputPopup} setIsOpen={setShowPinInputPopup} />
-			}
-			{showSyncPopup &&
-				<SyncPopup message={textSyncPopup}
-					onClose={() => {
-						setSyncPopup(false);
-						logout();
-					}}
-				/>
-			}
 		</>
 	);
 }
