@@ -3,6 +3,7 @@ import axios from 'axios';
 import { IHttpProxy } from '../../interfaces/IHttpProxy';
 import StatusContext from '@/context/StatusContext';
 import { addItem, getItem, removeItem } from '@/indexedDB';
+import { logger } from '@/logger';
 // @ts-ignore
 const walletBackendServerUrl = import.meta.env.VITE_WALLET_BACKEND_URL;
 const inFlightRequests = new Map<string, Promise<any>>();
@@ -55,7 +56,7 @@ export function useHttpProxy(): IHttpProxy {
 					}
 
 				} catch (err) {
-					console.warn('[Proxy] Failed cache read', err);
+					logger.warn('[Proxy] Failed cache read', err);
 				}
 			}
 

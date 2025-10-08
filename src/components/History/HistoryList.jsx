@@ -9,6 +9,7 @@ import HistoryDetailPopup from '../Popups/HistoryDetailPopup';
 import SessionContext from '@/context/SessionContext';
 import useFetchPresentations from '@/hooks/useFetchPresentations';
 import { reverse, compareBy } from '@/util';
+import { logger } from '@/logger';
 
 const HistoryList = ({ batchId = null, title = '', limit = null }) => {
 	const { keystore } = useContext(SessionContext);
@@ -28,7 +29,7 @@ const HistoryList = ({ batchId = null, title = '', limit = null }) => {
 	}, [batchId, history]);
 
 	const handleHistoryItemClick = async (item) => {
-		console.log('extractPresentations', item);
+		logger.debug('extractPresentations', item);
 		const transactionId = item[0].presentation.transactionId;
 		if (screenType === 'mobile') {
 			navigate(`/history/${transactionId}`);

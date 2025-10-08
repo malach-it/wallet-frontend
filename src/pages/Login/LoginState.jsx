@@ -12,6 +12,7 @@ import Button from '../../components/Buttons/Button';
 import LoginPageLayout from '../../components/Auth/LoginLayout';
 import checkForUpdates from '../../offlineUpdateSW';
 import ConnectionStatusIcon from '../../components/Layout/Navigation/ConnectionStatusIcon';
+import { logger } from '@/logger';
 
 const WebauthnLogin = ({
 	filteredUser,
@@ -119,12 +120,12 @@ const LoginState = () => {
 		}
 		if (state) {
 			try {
-				console.log('state', state);
+				logger.debug('state', state);
 				const decodedState = atob(state);
 				const stateObj = JSON.parse(decodedState);
 				return [cachedUsers.find(user => user.userHandleB64u === stateObj.userHandleB64u), false, authenticated === 'true'];
 			} catch (error) {
-				console.error('Error decoding state:', error);
+				logger.error('Error decoding state:', error);
 			}
 		}
 

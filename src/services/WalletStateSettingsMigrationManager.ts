@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react"
 import { LocalStorageKeystore } from "./LocalStorageKeystore";
 import { BackendApi } from "@/api";
+import { logger } from "@/logger";
 
 
 
@@ -10,7 +11,7 @@ export function useWalletStateSettingsMigrationManager(keystore: LocalStorageKey
 	const { getCalculatedWalletState, alterSettings } = keystore;
 	const { updatePrivateData } = api;
 	const migrate = async () => {
-		console.log("Before")
+		logger.debug("Before")
 		if (!isLoggedIn || migrated.current || getCalculatedWalletState() === null) {
 			return;
 		}
@@ -23,7 +24,7 @@ export function useWalletStateSettingsMigrationManager(keystore: LocalStorageKey
 		const response = await api.get('/user/session/account-info');
 
 		const { settings } = response.data;
-		console.log("Settings found = ", settings)
+		logger.debug("Settings found = ", settings)
 		if (!settings) {
 			migrated.current = true;
 			return;
@@ -33,7 +34,7 @@ export function useWalletStateSettingsMigrationManager(keystore: LocalStorageKey
 		await updatePrivateData(newPrivateData);
 		await keystoreCommit();
 		migrated.current = true;
-		console.log("Successfully migrated settings");
+		logger.debug("Successfully migrated settings");
 		// receive all stored credentials from wallet-backend-server
 		// update WalletStateContainer (PrivateData)
 		// after successful update, delete all stored credentials from wallet-backend-server
@@ -42,7 +43,7 @@ export function useWalletStateSettingsMigrationManager(keystore: LocalStorageKey
 	useEffect(() => {
 		if (isOnline && !migrated.current) {
 			migrate();
-			console.log("migrating settings...")
+			logger.debug("migrating settings...")
 		}
 	}, [getCalculatedWalletState, alterSettings, isOnline]);
 
