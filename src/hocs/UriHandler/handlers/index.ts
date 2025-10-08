@@ -1,7 +1,6 @@
-export * from './credentialRequestHandler'
-export * from './errorHandler'
-export * from './presentationHandler'
-export * from './presentationSuccessHandler'
-
 export * from './AuthorizationRequestHandler'
 export * from './AuthorizeHandler'
+export * from './CredentialRequestHandler'
+export * from './PresentationHandler'
+export * from './PresentationSuccessHandler'
+export * from './ProtocolErrorHandler'
