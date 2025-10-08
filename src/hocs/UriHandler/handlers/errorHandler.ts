@@ -1,4 +1,5 @@
 import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
+import { type HandlerFactoryResponse } from "../resources";
 
 export type ErrorHandlerFactoryConfig = {
 	url: string
