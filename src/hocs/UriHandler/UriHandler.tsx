@@ -5,8 +5,6 @@ import { jsonToLog, logger } from "@/logger";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
 import { useTranslation } from "react-i18next";
-import OpenID4VCIContext from "../../context/OpenID4VCIContext";
-import OpenID4VPContext from "../../context/OpenID4VPContext";
 import CredentialsContext from "@/context/CredentialsContext";
 import { CachedUser } from "@/services/LocalStorageKeystore";
 import SyncPopup from "@/components/Popups/SyncPopup";
@@ -16,12 +14,12 @@ import useErrorDialog from "@/hooks/useErrorDialog";
 import {
 	AuthorizationRequestHandler,
 	AuthorizeHandler,
-	credentialRequestHandlerFactory,
-	errorHandlerFactory,
-	presentationHandlerFactory,
-	presentationSuccessHandlerFactory,
+	CredentialRequestHandler,
+	PresentationHandler,
+	PresentationSuccessHandler,
+	ProtocolErrorHandler
 } from "./handlers";
-import { type StepHandlers } from "./resources";
+import { ProtocolData, ProtocolStep } from "./resources";
 
 const PinInputPopup = React.lazy(() => import('../../components/Popups/PinInput'));
 
@@ -33,9 +31,6 @@ export const UriHandler = (props: UriHandlerProps) => {
 	const { children } = props
 	const { updateOnlineStatus, isOnline } = useContext(StatusContext);
 
-	const [usedAuthorizationCodes, setUsedAuthorizationCodes] = useState<string[]>([]);
-	const [usedRequestUris, setUsedRequestUris] = useState<string[]>([]);
-
 	const { isLoggedIn, api, keystore, logout } = useContext(SessionContext);
 	const { syncPrivateData } = api;
 	const { getUserHandleB64u, getCachedUsers, getCalculatedWalletState } = keystore;
@@ -43,13 +38,11 @@ export const UriHandler = (props: UriHandlerProps) => {
 	const location = useLocation();
 	const [url, setUrl] = useState(window.location.href);
 
-	const { openID4VCI } = useContext(OpenID4VCIContext);
-	const { openID4VP } = useContext(OpenID4VPContext);
 	const core = useClientCore();
 	const { displayError } = useErrorDialog();
 
-	const [ currentStep, setStep ] = useState(null);
-	const [ protocolData, setProtocolData ] = useState(null);
+	const [ currentStep, setStep ] = useState<ProtocolStep>(null);
+	const [ protocolData, setProtocolData ] = useState<ProtocolData>(null);
 
 	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
 
@@ -136,51 +129,11 @@ export const UriHandler = (props: UriHandlerProps) => {
 		}
 	}, [redirectUri]);
 
-	const stepHandlers: StepHandlers = useMemo<StepHandlers>(() => {
-		const stepHandlers = {
-			"authorization_request": () => {},
-			"authorize": () => {},
-			"presentation": presentationHandlerFactory({
-				core,
-				url,
-				openID4VP,
-				vcEntityList,
-				t,
-				displayError,
-				setUsedRequestUris,
-				setRedirectUri,
-			}),
-			"presentation_success": presentationSuccessHandlerFactory({
-				url,
-				openID4VCI,
-				setUsedAuthorizationCodes,
-			}),
-			"protocol_error": errorHandlerFactory({
-				url,
-				isLoggedIn,
-				displayError,
-			}),
-			"credential_request": credentialRequestHandlerFactory({ api, keystore, core, displayError, t }),
-		}
-
-		// Bind each handler to stepHandlers so `this` refers to stepHandlers
-		for (const key in stepHandlers) {
-			if (typeof stepHandlers[key] === "function") {
-				stepHandlers[key] = stepHandlers[key].bind(stepHandlers);
-			}
-		}
-
-		return stepHandlers
-	}, [])
-
 	useEffect(() => {
 		if (!isLoggedIn) return
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
-				// @ts-expect-error
-				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
-				// @ts-expect-error
 				goToStep(presentationRequest.nextStep, presentationRequest.data)
 			}
 		}).catch(err => {
@@ -218,17 +171,41 @@ export const UriHandler = (props: UriHandlerProps) => {
 		return currentStep === "authorize"
 	}, [currentStep])
 
-	const goToStep = useCallback((step: string, data: any) => {
+	const credentialRequestStep = useMemo(() => {
+		return currentStep === "credential_request"
+	}, [currentStep])
+
+	const presentationStep = useMemo(() => {
+		return currentStep === "presentation"
+	}, [currentStep])
+
+	const presentationSuccessStep = useMemo(() => {
+		return currentStep === "presentation_success"
+	}, [currentStep])
+
+	const protocolErrorStep = useMemo(() => {
+		return currentStep === "protocol_error"
+	}, [currentStep])
+
+	const goToStep = useCallback((step: ProtocolStep, data: ProtocolData) => {
 		setStep(step)
 		setProtocolData(data)
-
-		stepHandlers[step](data)
 	}, [])
 
 	return (
 		<>
-			{authorizationRequestStep && <AuthorizationRequestHandler goToStep={goToStep} data={protocolData} />}
-			{authorizeStep && <AuthorizeHandler goToStep={goToStep} data={protocolData} />}
+			{authorizationRequestStep &&
+				<AuthorizationRequestHandler goToStep={goToStep} data={protocolData} />}
+			{authorizeStep &&
+				<AuthorizeHandler goToStep={goToStep} data={protocolData} />}
+			{credentialRequestStep &&
+				<CredentialRequestHandler goToStep={goToStep} data={protocolData} />}
+			{presentationStep &&
+				<PresentationHandler goToStep={goToStep} data={protocolData} />}
+			{presentationSuccessStep &&
+				<PresentationSuccessHandler goToStep={goToStep} data={protocolData} />}
+			{protocolErrorStep &&
+				<ProtocolErrorHandler goToStep={goToStep} data={protocolData} />}
 			{children}
 			{showPinInputPopup &&
 				<PinInputPopup isOpen={showPinInputPopup} setIsOpen={setShowPinInputPopup} />
