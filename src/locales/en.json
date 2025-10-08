@@ -97,7 +97,7 @@
 					"presentation_success": "You have presented a credential. The verifier notifies the presentation was successful."
 				},
 				"invalid_location": "The wallet could not parse the current location",
-				"invalid_request": "Your wallet has performed a request to the vevrifier that could not be successful. Please contact your administrator for more information"
+				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information"
 			}
 		}
 	},
