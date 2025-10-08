@@ -109,8 +109,6 @@ export function useCoreClientStateStore(): ClientStateStore {
 
 	const commitChanges = useCallback<ClientStateStore["commitChanges"]>(
 		async (clientState: ClientState): Promise<ClientState> => {
-			// TODO: Expose this to be triggered in more optimal place
-			await cleanupExpired();
 
 			const existingState = await getSessionByFilter({
 				credentialIssuerIdentifier: clientState.issuer,
@@ -135,9 +133,6 @@ export function useCoreClientStateStore(): ClientStateStore {
 			const [{ }, newPrivateData, keystoreCommit] = await keystore.saveCredentialIssuanceSessions(Array.from(sessions.current.values()));
 			await api.updatePrivateData(newPrivateData);
 			await keystoreCommit();
-
-
-			console.trace();
 
 			return clientState;
 		},
@@ -190,6 +185,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 
 	return useMemo(() => ({
 		create,
+		cleanupExpired,
 		commitChanges,
 		fromIssuerState,
 		fromState,
@@ -197,6 +193,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 		setIssuerMetadata,
 	}), [
 		create,
+		cleanupExpired,
 		commitChanges,
 		fromIssuerState,
 		fromState,

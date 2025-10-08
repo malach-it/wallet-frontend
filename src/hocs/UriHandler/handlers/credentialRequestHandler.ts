@@ -21,12 +21,15 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 	return async function credentialRequestHanlder(params: { access_token: string, state: string, c_nonce: string }) {
 
 				const clientState = await core.config.clientStateStore.fromState(params.state);
-				console.log(clientState)
 
 				const credential_configuration_ids = clientState
-						?.credential_configuration_ids || []
-				const audience = clientState.issuer
-				const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience)?.client_id
+						?.credential_configuration_ids || [];
+				const audience = clientState.issuer;
+				const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience)?.client_id;
+
+				console.trace();
+				alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
+
 
 				for (const credential_configuration_id of credential_configuration_ids) {
 					const [
@@ -39,8 +42,13 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 						issuer,
 					}]);
 					try {
-						// await api.updatePrivateData(proofsData);
-						// await proofsCommit()
+						await api.updatePrivateData(proofsData);
+						await proofsCommit()
+
+						console.trace();
+						alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
+
+						await core.config.clientStateStore.cleanupExpired();
 
 						const { data: { credentials }, nextStep } = await core.credential({
 							...params,
@@ -50,13 +58,18 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 							},
 						})
 
+
+						console.trace();
+						alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
+
+
 						const batchId = WalletStateUtils.getRandomUint32();
 						const [, credentialsData, credentialsCommit] = await keystore.addCredentials(
-							await Promise.all(credentials.map(async ({ credential }, index: number) => {
+							await Promise.all(credentials.map(async ({ credential, format }, index: number) => {
 								const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
 								const res = {
 									data: credential,
-									format: "vc+sd-jwt",
+									format,
 									kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
 									credentialConfigurationId: credential_configuration_id,
 									credentialIssuerIdentifier: clientState.issuer,

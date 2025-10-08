@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, memo, useMemo } from "react";
 import { OauthError } from "@wwwallet-private/client-core";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useMatch, useNavigate } from "react-router-dom";
 import { jsonToLog, logger } from "@/logger";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
@@ -27,7 +27,7 @@ import Spinner from "@/components/Shared/Spinner";
 
 const PinInputPopup = React.lazy(() => import('../../components/Popups/PinInput'));
 
-export const UriHandler = () => {
+export const UriHandler = memo(() => {
 	const { updateOnlineStatus, isOnline } = useContext(StatusContext);
 
 	const [usedAuthorizationCodes, setUsedAuthorizationCodes] = useState<string[]>([]);
@@ -170,25 +170,28 @@ export const UriHandler = () => {
 			}
 		}
 
-		core.location(window.location).then(presentationRequest => {
-			if (presentationRequest.protocol) {
-				// @ts-expect-error
-				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
-			}
-		}).catch(err => {
-			if (err instanceof OauthError) {
-				logger.error(t(`errors.${err.error}`), jsonToLog(err));
-				displayError({
-					title: t(`errors.${err.error}`),
-					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
-					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
-					err,
-					onClose: () => navigate("/"),
-				});
-			}
-			else logger.error(err);
-		})
+		(async () => {
+			try {
+				const presentationRequest = await core.location(window.location);
 
+				if (presentationRequest.protocol) {
+					// @ts-expect-error
+					stepHandlers[presentationRequest.nextStep](presentationRequest.data)
+				}
+			} catch (err) {
+				if (err instanceof OauthError) {
+					logger.error(t(`errors.${err.error}`), jsonToLog(err));
+					displayError({
+						title: t(`errors.${err.error}`),
+						emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+						description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
+						err,
+						onClose: () => navigate("/"),
+					});
+				}
+				else logger.error(err);
+			}
+		})();
 
 		// async function handle(urlToCheck: string) {
 		// 	const u = new URL(urlToCheck);
@@ -238,6 +241,6 @@ export const UriHandler = () => {
 			}
 		</>
 	);
-}
+})
 
 export default UriHandler;
