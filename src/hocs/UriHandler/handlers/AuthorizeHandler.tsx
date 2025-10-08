@@ -1,8 +1,8 @@
+import { ProtocolData, ProtocolStep } from "../resources";
+
 type AuthorizeHandlerProps = {
-	goToStep: (step: string, data: any) => void;
-	data: {
-		authorize_url: string;
-	};
+	goToStep: (step: ProtocolStep, data: ProtocolData) => void;
+	data: any;
 }
 
 export const AuthorizeHandler = ({ data }: AuthorizeHandlerProps) => {
