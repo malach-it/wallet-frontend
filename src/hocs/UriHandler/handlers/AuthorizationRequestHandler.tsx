@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { OauthError } from "@wwwallet-private/client-core";
 import { jsonToLog, logger } from "@/logger";
 import { ProtocolData, ProtocolStep } from "../resources";
