@@ -4,6 +4,6 @@ export type LocationProtocolResponse = Exclude<Awaited<ReturnType<InstanceType<t
 
 export type HandlerFactoryResponse = (this: StepHandlers, data: LocationProtocolResponse['data']|{}) => Promise<void>;
 
-export type StepHandlerID = "presentation" | "presentation_success" | "credential_request" | "protocol_error"
+export type StepHandlerID = "authorization_request" | "authorize" | "presentation" | "presentation_success" | "credential_request" | "protocol_error"
 
 export type StepHandlers = Record<StepHandlerID, HandlerFactoryResponse>;
