@@ -1,9 +1,13 @@
 import { Core } from "@wwwallet-private/client-core";
 
-export type LocationProtocolResponse = Exclude<Awaited<ReturnType<InstanceType<typeof Core>['location']>>, { protocol: null }>;
+export type ProtocolResponse = Exclude<Awaited<ReturnType<InstanceType<typeof Core>['location']>>, { protocol: null }>;
 
-export type HandlerFactoryResponse = (this: StepHandlers, data: LocationProtocolResponse['data']|{}) => Promise<void>;
+export type ProtocolData = ProtocolResponse['data']
 
-export type StepHandlerID = "presentation" | "presentation_success" | "credential_request" | "protocol_error"
-
-export type StepHandlers = Record<StepHandlerID, HandlerFactoryResponse>;
+export type ProtocolStep =
+	| "authorization_request"
+	| "authorize"
+	| "presentation"
+	| "presentation_success"
+	| "protocol_error"
+	| "credential_request"

@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { OauthError } from "@wwwallet-private/client-core";
 import { jsonToLog, logger } from "@/logger";
+import { ProtocolData, ProtocolStep } from "../resources";
 
 import { useTranslation } from "react-i18next";
 import useClientCore from "@/hooks/useClientCore";
 import useErrorDialog from "@/hooks/useErrorDialog";
-import MessagePopup from "@/components/Popups/MessagePopup";
 
 export type AuthorizationRequestHandlerParams = {
-	goToStep: (step: string, data: any) => void;
-	data: {
-		issuer: string;
-		credential_configuration_ids: string;
-		issuer_state: string;
-	}
+	goToStep: (step: ProtocolStep, data: ProtocolData) => void;
+	data: any
 }
 
 export const AuthorizationRequestHandler = ({ goToStep, data }: AuthorizationRequestHandlerParams) => {
