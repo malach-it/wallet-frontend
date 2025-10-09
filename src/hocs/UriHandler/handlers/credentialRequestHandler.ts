@@ -2,12 +2,11 @@ import { TFunction } from "i18next";
 import { calculateJwkThumbprint, decodeJwt, JWK } from "jose";
 import { Core, OauthError } from "@wwwallet-private/client-core";
 import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
-import { type HandlerFactoryResponse } from "../resources";
+import { StepHandlerID, type HandlerFactoryResponse } from "../resources";
 import { BackendApi } from '../../../api';
 import { logger, jsonToLog } from "../../../logger";
 import type { LocalStorageKeystore } from '../../../services/LocalStorageKeystore';
 import { WalletStateUtils } from "../../../services/WalletStateUtils";
-import { useEffect, useState } from "react";
 
 export type AuthorizeHandlerFactoryConfig = {
 	keystore: LocalStorageKeystore;
@@ -20,93 +19,71 @@ export type AuthorizeHandlerFactoryConfig = {
 export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryConfig): HandlerFactoryResponse {
 	const { core, keystore, api, displayError, t } = config;
 
-	const [credentialsList, setCredentials] = useState([]);
+	return async function credentialRequestHandler(params: { access_token: string, state: string, c_nonce: string }) {
+		let nextStepId: StepHandlerID;
+		const clientState = await core.config.clientStateStore.fromState(params.state);
 
-	useEffect(() => {
-		if (credentialsList.length < 1) return;
+		const credentialConfigurationIds = clientState
+				?.credential_configuration_ids || [];
+		const audience = clientState.issuer;
+		const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience)?.client_id;
 
-		(async () => {
-			const batchId = WalletStateUtils.getRandomUint32();
-			const [, credentialsData, credentialsCommit] = await keystore.addCredentials(
-				await Promise.all(credentialsList.map(async ({ credential, format, issuer, id }, index: number) => {
+		try {
+			const callback = async ({ credentialConfigurationId, proof_jwts }) => {
+				const { data: { credentials }, nextStep } = await core.credential({
+					...params,
+					credential_configuration_id: credentialConfigurationId,
+					proofs: {
+						jwt: proof_jwts,
+					},
+				});
+				nextStepId = nextStep
+
+				const batchId = WalletStateUtils.getRandomUint32();
+				return await Promise.all(credentials.map(async ({ credential, format }, index: number) => {
 					const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
 					const res = {
 						data: credential,
 						format,
 						kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
-						credentialConfigurationId: id,
-						credentialIssuerIdentifier: issuer,
+						credentialConfigurationId,
+						credentialIssuerIdentifier: clientState.issuer,
 						batchId,
 						instanceId: index,
 					}
 					return res;
 				}))
-			)
+			};
+
+			const [{}, credentialsData, credentialsCommit] = await keystore.requestAndAddCredentials(
+				[{
+					nonce: params.c_nonce,
+					audience,
+					issuer,
+				}],
+				credentialConfigurationIds,
+				callback,
+			);
+
+			await core.config.clientStateStore.cleanupExpired();
 
 			await api.updatePrivateData(credentialsData);
 			await credentialsCommit();
-		})();
-	}, [credentialsList])
 
-	return async function credentialRequestHanlder(params: { access_token: string, state: string, c_nonce: string }) {
-
-				const clientState = await core.config.clientStateStore.fromState(params.state);
-
-				const credential_configuration_ids = clientState
-						?.credential_configuration_ids || [];
-				const audience = clientState.issuer;
-				const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience)?.client_id;
-
-				// console.trace();
-				// alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
-
-
-				for (const credential_configuration_id of credential_configuration_ids) {
-					const [
-						{ proof_jwts },
-						proofsData,
-						proofsCommit
-					] = await keystore.generateOpenid4vciProofs([{
-						nonce: params.c_nonce,
-						audience,
-						issuer,
-					}]);
-					try {
-						await api.updatePrivateData(proofsData);
-						await proofsCommit()
-
-						// console.trace();
-						// alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
-
-						// await core.config.clientStateStore.cleanupExpired();
-
-						const { data: { credentials }, nextStep } = await core.credential({
-							...params,
-							credential_configuration_id,
-							proofs: {
-								jwt: proof_jwts,
-							},
-						})
-
-
-						// console.trace();
-						// alert(await api.syncPrivateData(keystore.getCachedUsers().shift()));
-
-						setCredentials([...credentialsList, ...credentials.map(({ credential, format }) => ({ credential, format, id: credential_configuration_id, issuer: clientState.issuer}))])
-						// this[nextStep]({});
-					} catch(err) {
-						if (err instanceof OauthError) {
-							logger.error(t(`errors.${err.error}`), jsonToLog(err));
-							displayError({
-								title: t(`errors.${err.error}`),
-								emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
-								description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
-								err,
-							});
-						} else {
-							logger.error(err);
-						}
-					}
-				}
+			if (nextStepId) this[nextStepId]({});
+		} catch(err) {
+			if (err instanceof OauthError) {
+				logger.error(t(`errors.${err.error}`), jsonToLog(err));
+				displayError({
+					title: t(`errors.${err.error}`),
+					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
+					err,
+				});
+			} else {
+				logger.error(err);
 			}
+		}
+	}
 }
+

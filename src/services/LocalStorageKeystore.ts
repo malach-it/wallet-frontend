@@ -92,6 +92,23 @@ export interface LocalStorageKeystore {
 	generateDeviceResponseWithProximity(mdocCredential: MDoc, presentationDefinition: any, sessionTranscriptBytes: any): Promise<{ deviceResponseMDoc: MDoc }>,
 
 	getCalculatedWalletState(): WalletState | null,
+	requestAndAddCredentials: (requests: {
+		nonce: string;
+		audience: string;
+		issuer: string;
+	}[], credentialConfigurationIds: string[], callback: (data: {
+		credentialConfigurationId: string;
+		proof_jwts: string[];
+	}) => Promise<{
+		data: string;
+		format: string;
+		kid: string;
+		batchId: number;
+		credentialIssuerIdentifier: string;
+		credentialConfigurationId: string;
+		instanceId: number;
+		credentialId?: number;
+	}[]>) => Promise<[{}, AsymmetricEncryptedContainer, CommitCallback]>
 	addCredentials(credentials: { data: string, format: string, kid: string, batchId: number, credentialIssuerIdentifier: string, credentialConfigurationId: string, instanceId: number, credentialId?: number }[]): Promise<[
 		{},
 		AsymmetricEncryptedContainer,
@@ -631,6 +648,59 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		return (calculatedWalletState);
 	}, [calculatedWalletState]);
 
+	const requestAndAddCredentials = useCallback(
+		async (
+			requests: { nonce: string, audience: string, issuer: string }[],
+			credentialConfigurationIds: string[],
+			requestCredentialsCallback: (data: { credentialConfigurationId: string, proof_jwts: string[] }) => Promise<{ data: string, format: string, kid: string, batchId: number, credentialIssuerIdentifier: string, credentialConfigurationId: string, instanceId: number, credentialId?: number, }[]>,
+		): Promise<[{}, AsymmetricEncryptedContainer, CommitCallback]> => {
+			let [walletStateContainer] = await openPrivateData();
+			walletStateContainer = await WalletStateOperations.foldOldEventsIntoBaseState(walletStateContainer);
+
+			return editPrivateData(async (originalContainer) => {
+				let openedContainer: keystore.OpenedContainer = originalContainer;
+
+				for (const credentialConfigurationId of credentialConfigurationIds) {
+					const { nonce, audience, issuer } = requests[0]; // the first row is enough since the nonce remains the same
+					const [{ proof_jwts }, proofsContainer] = await keystore.generateOpenid4vciProofs(
+						openedContainer,
+						config.DID_KEY_VERSION,
+						nonce,
+						audience,
+						issuer,
+						requests.length
+					);
+
+					const credentials = await requestCredentialsCallback({
+						credentialConfigurationId,
+						proof_jwts,
+					});
+
+					for (const { data, format, batchId, credentialIssuerIdentifier, kid, credentialConfigurationId, instanceId, credentialId } of credentials) {
+						walletStateContainer = await WalletStateOperations.addNewCredentialEvent(
+							walletStateContainer,
+							{
+								data,
+								format,
+								kid,
+								batchId,
+								credentialIssuerIdentifier,
+								credentialConfigurationId,
+								instanceId,
+								credentialId,
+							}
+						);
+					}
+				}
+
+
+				const { newContainer } = await keystore.updateWalletState(originalContainer, walletStateContainer);
+				return [{}, newContainer];
+			})
+		},
+		[editPrivateData, openPrivateData],
+	);
+
 	const addCredentials = useCallback(async (credentials: { data: string, format: string, kid: string, batchId: number, credentialIssuerIdentifier: string, credentialConfigurationId: string, instanceId: number, credentialId?: number, }[]): Promise<[
 		{},
 		AsymmetricEncryptedContainer,
@@ -793,6 +863,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		generateDeviceResponseWithProximity,
 		getCalculatedWalletState,
 		getAllCredentials,
+		requestAndAddCredentials,
 		addCredentials,
 		deleteCredentialsByBatchId,
 		addPresentations,
@@ -823,6 +894,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		generateDeviceResponseWithProximity,
 		getCalculatedWalletState,
 		getAllCredentials,
+		requestAndAddCredentials,
 		addCredentials,
 		deleteCredentialsByBatchId,
 		addPresentations,
