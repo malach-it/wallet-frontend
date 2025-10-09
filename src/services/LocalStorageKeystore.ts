@@ -670,6 +670,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 						issuer,
 						requests.length
 					);
+					openedContainer = proofsContainer;
 
 					const credentials = await requestCredentialsCallback({
 						credentialConfigurationId,
@@ -694,7 +695,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				}
 
 
-				const { newContainer } = await keystore.updateWalletState(originalContainer, walletStateContainer);
+				const { newContainer } = await keystore.updateWalletState(openedContainer, walletStateContainer);
 				return [{}, newContainer];
 			})
 		},
