@@ -1,15 +1,34 @@
-import { useCallback, useContext, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { logger } from '@/logger';
 import type { ClientState, ClientStateStore } from '@wwwallet-private/client-core'
 import SessionContext from '@/context/SessionContext';
 import { generateRandomIdentifier } from '@/lib/utils/generateRandomIdentifier';
 import pkceChallenge from 'pkce-challenge';
 import { exportJWK, generateKeyPair } from 'jose';
+import { WalletStateUtils } from '@/services/WalletStateUtils';
+import { WalletStateCredentialIssuanceSession } from '@/services/WalletStateOperations';
 
-const CLIENT_STATE_KEY = "clientStates"
+type Context = {
+	sessionId: number;
+}
 
 export function useCoreClientStateStore(): ClientStateStore {
-	const { keystore } = useContext(SessionContext);
+	const { keystore, api } = useContext(SessionContext);
+
+	const sessions = useRef(new Map<number, WalletStateCredentialIssuanceSession>());
+
+	useEffect(() => {
+		if (keystore && sessions.current.size === 0) {
+			const S = keystore.getCalculatedWalletState();
+			if (!S) {
+				return;
+			}
+			S.credentialIssuanceSessions.map((session) => {
+				sessions.current.set(session.sessionId, session);
+			});
+			logger.debug("Loaded Credential Issuance Sessions from keystore = ", Array.from(sessions.current.values()));
+		}
+	}, [keystore]);
 
 	const create = useCallback<ClientStateStore["create"]>(
 		async (issuer, issuer_state) => {
@@ -21,10 +40,10 @@ export function useCoreClientStateStore(): ClientStateStore {
 				})
 			).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
-				const { code_verifier } = await pkceChallenge()
+			const { code_verifier } = await pkceChallenge();
 
 			const { publicKey, privateKey } = await generateKeyPair("ES256", { extractable: true });
-			const clientState = {
+			const client_state: ClientState = {
 				issuer,
 				issuer_state,
 				state,
@@ -36,79 +55,111 @@ export function useCoreClientStateStore(): ClientStateStore {
 						...await exportJWK(privateKey)
 					},
 				},
+				context: {
+					sessionId: WalletStateUtils.getRandomUint32()
+				},
 			}
 
-			if (!clientState.issuer_state?.length) {
-				clientState.issuer_state = 'issuer_state'
+			if (!client_state.issuer_state?.length) {
+				client_state.issuer_state = 'issuer_state'
 			}
 
-			return clientState;
-		}, []);
+			return client_state;
+		}, [keystore]);
+
+	const getSessionByFilter = useCallback(
+		async (filters: Partial<WalletStateCredentialIssuanceSession>): Promise<WalletStateCredentialIssuanceSession | null> => {
+			const matches = Array.from(sessions.current.values()).filter(session =>
+				Object.entries(filters).every(([key, value]) => session[key] === value)
+			);
+			return matches.pop() ?? null;
+		},
+		[sessions]
+	);
+
+	const getRememberIssuerAge = useCallback(async (): Promise<number | null> => {
+		if (!keystore) {
+			return null;
+		}
+		const S = keystore.getCalculatedWalletState();
+		if (!S) {
+			return null;
+		}
+		return parseInt(S.settings['openidRefreshTokenMaxAgeInSeconds']);
+	}, [keystore]);
+
+	// TODO: Expose this to be triggered in more optimal place
+	const cleanupExpired = useCallback(async (): Promise<void> => {
+		const rememberIssuerForSeconds = await getRememberIssuerAge();
+		logger.debug("Rememeber issuer for seconds = ", rememberIssuerForSeconds)
+
+		if (rememberIssuerForSeconds == null) {
+			return;
+		}
+		for (const res of Array.from(sessions.current.values())) {
+			logger.debug("Res i: ", res);
+			if (res.created &&
+				typeof res.created === 'number' &&
+				Math.floor(Date.now() / 1000) > res.created + rememberIssuerForSeconds) {
+				logger.debug("Removed session id = ", res.sessionId)
+				sessions.current.delete(res.sessionId);
+			}
+		}
+	}, [getRememberIssuerAge]);
 
 	const commitChanges = useCallback<ClientStateStore["commitChanges"]>(
 		async (clientState: ClientState): Promise<ClientState> => {
-				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
 
-				let found = false;
-				const newClientStates = JSON.parse(rawClientStates).map(
-					(oldClientState) => {
-						if (
-							oldClientState.state === clientState.state &&
-							oldClientState.issuer === clientState.issuer &&
-							oldClientState.issuer_state === clientState.issuer_state
-						) {
-							found = true
-							return clientState
-						}
-						return oldClientState;
-					}
-				)
+			const existingState = await getSessionByFilter({
+				credentialIssuerIdentifier: clientState.issuer,
+				credentialConfigurationId: clientState.credential_configuration_ids[0],
+			});
 
-				if (!found) {
-					newClientStates.push(clientState)
-				}
+			if (existingState) {
+				sessions.current.delete(existingState.sessionId);
+			}
 
-				localStorage.setItem(CLIENT_STATE_KEY, JSON.stringify(newClientStates.slice(0, 24)))
+			sessions.current.set((<Context>clientState.context).sessionId, {
+				sessionId: (<Context>clientState.context).sessionId,
+				credentialIssuerIdentifier: clientState.issuer,
+				credentialConfigurationId: clientState.credential_configuration_ids[0],
+				state: clientState.state,
+				issuer_state: clientState.issuer_state,
+				client_state: clientState,
+				code_verifier: clientState.code_verifier,
+				created: Math.floor(Date.now() / 1000),
+			})
 
-				return clientState;
+			const [{ }, newPrivateData, keystoreCommit] = await keystore.saveCredentialIssuanceSessions(Array.from(sessions.current.values()));
+			await api.updatePrivateData(newPrivateData);
+			await keystoreCommit();
+
+			return clientState;
 		},
-		[]
+		[api, keystore]
 	)
 
 	const fromIssuerState = useCallback<ClientStateStore["fromIssuerState"]>(
 		async (issuer, issuer_state): Promise<ClientState> => {
-				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
+			const session = await getSessionByFilter({
+				issuer_state,
+			});
 
-				const clientStates = JSON.parse(rawClientStates).filter(
-					({ issuer: e, issuer_state: f }) => {
-						return e === issuer && f === (issuer_state || 'issuer_state')
-					}
-				)
-				const clientState = clientStates[clientStates.length - 1]
-
-				if (!clientState) {
-					throw new Error("could not find client state")
-				}
-
-				return clientState;
+			return session?.client_state ?? null;
 		},
-		[]
-	)
+		[getSessionByFilter]
+	);
 
 	const fromState = useCallback<ClientStateStore["fromState"]>(
-			async (state): Promise<ClientState> => {
-				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
+		async (state): Promise<ClientState> => {
+			const session = await getSessionByFilter({
+				state,
+			});
 
-				const clientState = JSON.parse(rawClientStates).find(({ state: e }) => e === state)
-
-				if (!clientState) {
-					throw new Error("could not find client state")
-				}
-
-				return clientState;
-			},
-			[]
-	)
+			return session?.client_state ?? null;
+		},
+		[getSessionByFilter]
+	);
 
 	const setCredentialConfigurationIds = useCallback<ClientStateStore["setCredentialConfigurationIds"]>(
 		async (clientState, credentialConfigurationIds): Promise<ClientState> => {
@@ -134,6 +185,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 
 	return useMemo(() => ({
 		create,
+		cleanupExpired,
 		commitChanges,
 		fromIssuerState,
 		fromState,
@@ -141,6 +193,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 		setIssuerMetadata,
 	}), [
 		create,
+		cleanupExpired,
 		commitChanges,
 		fromIssuerState,
 		fromState,

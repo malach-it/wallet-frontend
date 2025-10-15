@@ -1,6 +1,7 @@
 export * from './authorizeHandler'
 export * from './credentialOfferHandler'
 export * from './credentialRequestHandler'
+export * from './credentialSuccessHandler'
 export * from './errorHandler'
 export * from './presentationHandler'
 export * from './presentationSuccessHandler'

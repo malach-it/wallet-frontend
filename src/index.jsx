@@ -14,8 +14,8 @@ import { logger } from './logger';
 // Set root element for react-modal
 Modal.setAppElement('#root');
 
-ConsoleBehavior();
-logger.replaceConsoleMethods();
+// ConsoleBehavior();
+// logger.replaceConsoleMethods();
 
 // Initialize IndexedDB BEFORE React renders
 initializeDataSource()

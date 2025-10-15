@@ -1,31 +1,30 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, memo, useMemo, useCallback } from "react";
 import { OauthError } from "@wwwallet-private/client-core";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { jsonToLog, logger } from "@/logger";
 import StatusContext from "../../context/StatusContext";
 import SessionContext from "../../context/SessionContext";
 import { useTranslation } from "react-i18next";
-import OpenID4VCIContext from "../../context/OpenID4VCIContext";
-import OpenID4VPContext from "../../context/OpenID4VPContext";
-import CredentialsContext from "@/context/CredentialsContext";
 import { CachedUser } from "@/services/LocalStorageKeystore";
 import SyncPopup from "@/components/Popups/SyncPopup";
 import { useSessionStorage } from "@/hooks/useStorage";
 import useClientCore from "@/hooks/useClientCore";
 import useErrorDialog from "@/hooks/useErrorDialog";
 import {
-	authorizeHandlerFactory,
-	credentialOfferHandlerFactory,
-	credentialRequestHandlerFactory,
-	errorHandlerFactory,
-	presentationHandlerFactory,
-	presentationSuccessHandlerFactory,
+	useAuthorizeHandler,
+	useCredentialOfferHandler,
+	useCredentialRequestHandler,
+	useCredentialSuccessHandler,
+	useErrorHandler,
+	usePresentationHandler,
+	usePresentationSuccessHandler,
 } from "./handlers";
-import { type StepHandlers } from "./resources";
+import { ProtocolData, ProtocolStep, type StepHandlers } from "./resources";
+import Spinner from "@/components/Shared/Spinner";
 
 const PinInputPopup = React.lazy(() => import('../../components/Popups/PinInput'));
 
-export const UriHandler = ({ children }) => {
+export const UriHandler = memo(() => {
 	const { updateOnlineStatus, isOnline } = useContext(StatusContext);
 
 	const [usedAuthorizationCodes, setUsedAuthorizationCodes] = useState<string[]>([]);
@@ -38,10 +37,47 @@ export const UriHandler = ({ children }) => {
 	const location = useLocation();
 	const [url, setUrl] = useState(window.location.href);
 
-	const { openID4VCI } = useContext(OpenID4VCIContext);
-	const { openID4VP } = useContext(OpenID4VPContext);
 	const core = useClientCore();
 	const { displayError } = useErrorDialog();
+	const navigate = useNavigate();
+
+	const [ currentStep, setStep ] = useState<ProtocolStep>(null);
+	const [ protocolData, setProtocolData ] = useState<ProtocolData>(null);
+
+	const goToStep = useCallback((step: ProtocolStep, data: ProtocolData) => {
+		setStep(step);
+		setProtocolData(data);
+		stepHandlers[step](data);
+	}, []);
+
+	const credentialOfferHandler = useCredentialOfferHandler({ goToStep, data: protocolData })
+	const authorizeHandler = useAuthorizeHandler({ goToStep, data: protocolData });
+	const presentationHandler = usePresentationHandler({ goToStep, data: protocolData, setUsedRequestUris });
+	const presentationSuccessHandler = usePresentationSuccessHandler({ goToStep, data: protocolData, setUsedAuthorizationCodes });
+	const errorHandler = useErrorHandler({ goToStep, data: protocolData });
+	const credentialRequestHandler = useCredentialRequestHandler({ goToStep, data: protocolData })
+	const credentialSuccessHandler = useCredentialSuccessHandler({ goToStep, data: protocolData });
+
+	const stepHandlers: Partial<StepHandlers> = useMemo(() => ({
+		"authorization_request": credentialOfferHandler,
+		"authorize": authorizeHandler,
+		"presentation": presentationHandler,
+		"presentation_success": presentationSuccessHandler,
+		"protocol_error": errorHandler,
+		"credential_request": credentialRequestHandler,
+		"credential_success": credentialSuccessHandler,
+	}), [
+		goToStep,
+		currentStep,
+		protocolData,
+		credentialOfferHandler,
+		authorizeHandler,
+		presentationHandler,
+		presentationSuccessHandler,
+		errorHandler,
+		credentialRequestHandler,
+		credentialSuccessHandler,
+	]);
 
 	const [showPinInputPopup, setShowPinInputPopup] = useState<boolean>(false);
 
@@ -49,9 +85,6 @@ export const UriHandler = ({ children }) => {
 	const [textSyncPopup, setTextSyncPopup] = useState<{ description: string }>({ description: "" });
 
 	const { t } = useTranslation();
-
-	const [redirectUri, setRedirectUri] = useState(null);
-	const { vcEntityList } = useContext(CredentialsContext);
 
 	const [cachedUser, setCachedUser] = useState<CachedUser | null>(null);
 	const [synced, setSynced] = useState(false);
@@ -122,68 +155,30 @@ export const UriHandler = ({ children }) => {
 		}
 	}, [synced, setUrl, location]);
 
-	useEffect(() => {
-		if (redirectUri) {
-			window.location.href = redirectUri;
-		}
-	}, [redirectUri]);
 
 	useEffect(() => {
-		if (!isLoggedIn) {
-			return;
-		}
+		(async () => {
+			try {
+				const presentationRequest = await core.location(window.location);
 
-		const stepHandlers: StepHandlers = {
-			"authorization_request": credentialOfferHandlerFactory({ core, displayError, t }),
-			"authorize": authorizeHandlerFactory({}),
-			"presentation": presentationHandlerFactory({
-				core,
-				url,
-				openID4VP,
-				vcEntityList,
-				t,
-				displayError,
-				setUsedRequestUris,
-				setRedirectUri,
-			}),
-			"presentation_success": presentationSuccessHandlerFactory({
-				url,
-				openID4VCI,
-				setUsedAuthorizationCodes,
-			}),
-			"protocol_error": errorHandlerFactory({
-				url,
-				isLoggedIn,
-				displayError,
-			}),
-			"credential_request": credentialRequestHandlerFactory({ api, keystore, core, displayError, t }),
-		}
-
-		// Bind each handler to stepHandlers so `this` refers to stepHandlers
-		for (const key in stepHandlers) {
-			if (typeof stepHandlers[key] === "function") {
-				stepHandlers[key] = stepHandlers[key].bind(stepHandlers);
+				if (presentationRequest.protocol) {
+					// @ts-expect-error
+					goToStep(presentationRequest.nextStep, presentationRequest.data);
+				}
+			} catch (err) {
+				if (err instanceof OauthError) {
+					logger.error(t(`errors.${err.error}`), jsonToLog(err));
+					displayError({
+						title: t(`errors.${err.error}`),
+						emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+						description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
+						err,
+						onClose: () => navigate("/"),
+					});
+				}
+				else logger.error(err);
 			}
-		}
-
-		core.location(window.location).then(presentationRequest => {
-			if (presentationRequest.protocol) {
-				// @ts-expect-error
-				stepHandlers[presentationRequest.nextStep](presentationRequest.data)
-			}
-		}).catch(err => {
-			if (err instanceof OauthError) {
-				logger.error(t(`errors.${err.error}`), jsonToLog(err));
-				displayError({
-					title: t(`errors.${err.error}`),
-					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
-					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
-					err,
-				});
-			}
-			else logger.error(err);
-		})
-
+		})();
 
 		// async function handle(urlToCheck: string) {
 		// 	const u = new URL(urlToCheck);
@@ -219,7 +214,7 @@ export const UriHandler = ({ children }) => {
 
 	return (
 		<>
-			{children}
+			<Spinner/>
 			{showPinInputPopup &&
 				<PinInputPopup isOpen={showPinInputPopup} setIsOpen={setShowPinInputPopup} />
 			}
@@ -233,6 +228,6 @@ export const UriHandler = ({ children }) => {
 			}
 		</>
 	);
-}
+})
 
 export default UriHandler;
