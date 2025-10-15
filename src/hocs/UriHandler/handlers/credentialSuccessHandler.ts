@@ -1,12 +1,10 @@
-import { NavigateFunction } from "react-router-dom";
-import { type HandlerFactoryResponse } from "../resources";
+import { useNavigate } from "react-router-dom";
+import { HandlerHook, HandlerHookConfig } from "../resources";
 
-export type CredentialSuccessHandlerFactoryConfig = {
-	navigate: NavigateFunction
-}
+export function useCredentialSuccessHandler(config: HandlerHookConfig): HandlerHook {
+	const navigate = useNavigate()
 
-export function credentialSuccessHandlerFactory(config: CredentialSuccessHandlerFactoryConfig): HandlerFactoryResponse {
 	return async function credentialSuccessHandler() {
-		config.navigate("/");
+		navigate("/");
 	}
 }

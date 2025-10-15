@@ -1,9 +1,6 @@
-import { type HandlerFactoryResponse } from "../resources";
+import { HandlerHook, HandlerHookConfig } from "../resources";
 
-export type AuthorizeHandlerFactoryConfig = {
-}
-
-export function authorizeHandlerFactory(config: AuthorizeHandlerFactoryConfig): HandlerFactoryResponse {
+export function useAuthorizeHandler(config: HandlerHookConfig): HandlerHook {
 	return async function authorizeHandler({ authorize_url }: { authorize_url: string }) {
 		window.location.href = authorize_url
 	}

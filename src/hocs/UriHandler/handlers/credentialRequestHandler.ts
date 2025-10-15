@@ -1,26 +1,36 @@
-import { TFunction } from "i18next";
 import { calculateJwkThumbprint, decodeJwt, JWK } from "jose";
-import { Core, OauthError } from "@wwwallet-private/client-core";
-import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
-import { StepHandlerID, type HandlerFactoryResponse } from "../resources";
-import { BackendApi } from '../../../api';
+import { OauthError } from "@wwwallet-private/client-core";
+import { HandlerHook, HandlerHookConfig, ProtocolStep } from "../resources";
 import { logger, jsonToLog } from "../../../logger";
-import type { LocalStorageKeystore } from '../../../services/LocalStorageKeystore';
 import { WalletStateUtils } from "../../../services/WalletStateUtils";
+import { useCallback, useContext, useEffect, useState } from "react";
+import SessionContext from "@/context/SessionContext";
+import useClientCore from "@/hooks/useClientCore";
+import { useTranslation } from "react-i18next";
+import useErrorDialog from "@/hooks/useErrorDialog";
 
-export type AuthorizeHandlerFactoryConfig = {
-	keystore: LocalStorageKeystore;
-	api: BackendApi;
-	core: Core;
-	displayError: DisplayErrorFunction;
-	t: TFunction<"translation", undefined>;
-}
+export function useCredentialRequestHandler({ goToStep, data }: HandlerHookConfig): HandlerHook {
+	const { keystore, api } = useContext(SessionContext);
+	const { t } = useTranslation();
+	const core = useClientCore();
+	const { displayError } = useErrorDialog();
 
-export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryConfig): HandlerFactoryResponse {
-	const { core, keystore, api, displayError, t } = config;
+	const [credentialsList, setCredentialsList] = useState([]);
+	const [nextStep, setNextStep] = useState<ProtocolStep|null>(null);
 
-	return async function credentialRequestHandler(params: { access_token: string, state: string, c_nonce: string }) {
-		let nextStepId: StepHandlerID;
+	useEffect(() => {
+		if (credentialsList.length < 1) return;
+		(async () => {
+				await core.config.clientStateStore.cleanupExpired();
+				const [, credentialsData, credentialsCommit] = await keystore.addCredentials(credentialsList);
+				await api.updatePrivateData(credentialsData);
+				await credentialsCommit();
+
+				if (nextStep) goToStep(nextStep, {});
+		})();
+	}, [credentialsList]);
+
+	const credentialRequestHandler = useCallback(async (params: { access_token: string, state: string, c_nonce: string }) => {
 		const clientState = await core.config.clientStateStore.fromState(params.state);
 
 		const credentialConfigurationIds = clientState
@@ -29,18 +39,28 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 		const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience)?.client_id;
 
 		try {
-			const callback = async ({ credentialConfigurationId, proof_jwts }) => {
-				const { data: { credentials }, nextStep } = await core.credential({
+			const credentialsToBeAdded = [];
+			for (const credentialConfigurationId of credentialConfigurationIds) {
+				const [{ proof_jwts }, proofsContainer, proofsCommit] = await keystore.generateOpenid4vciProofs([{
+					nonce: params.c_nonce,
+					audience,
+					issuer,
+				}]);
+
+				await api.updatePrivateData(proofsContainer);
+				await proofsCommit()
+
+				const { data: { credentials }, nextStep: nxtStp } = await core.credential({
 					...params,
 					credential_configuration_id: credentialConfigurationId,
 					proofs: {
 						jwt: proof_jwts,
 					},
 				});
-				nextStepId = nextStep
+				setNextStep(nxtStp);
 
 				const batchId = WalletStateUtils.getRandomUint32();
-				return await Promise.all(credentials.map(async ({ credential, format }, index: number) => {
+				const creds = await Promise.all(credentials.map(async ({ credential, format }, index: number) => {
 					const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
 					const res = {
 						data: credential,
@@ -53,24 +73,10 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 					}
 					return res;
 				}))
-			};
 
-			const [{}, credentialsData, credentialsCommit] = await keystore.requestAndAddCredentials(
-				[{
-					nonce: params.c_nonce,
-					audience,
-					issuer,
-				}],
-				credentialConfigurationIds,
-				callback,
-			);
-
-			await core.config.clientStateStore.cleanupExpired();
-
-			await api.updatePrivateData(credentialsData);
-			await credentialsCommit();
-
-			if (nextStepId) this[nextStepId]({});
+				credentialsToBeAdded.push(...creds)
+			}
+			setCredentialsList(credentialsToBeAdded);
 		} catch(err) {
 			if (err instanceof OauthError) {
 				logger.error(t(`errors.${err.error}`), jsonToLog(err));
@@ -84,6 +90,8 @@ export function credentialRequestHandlerFactory(config: AuthorizeHandlerFactoryC
 				logger.error(err);
 			}
 		}
-	}
+	}, [core, api, keystore]);
+
+	return credentialRequestHandler;
 }
 

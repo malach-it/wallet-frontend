@@ -1,16 +1,15 @@
-import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
-import { type HandlerFactoryResponse } from "../resources";
+import { useCallback, useContext } from "react";
+import SessionContext from "@/context/SessionContext";
+import { HandlerHook, HandlerHookConfig } from "../resources";
+import useErrorDialog from "@/hooks/useErrorDialog";
 
-export type ErrorHandlerFactoryConfig = {
-	url: string
-	isLoggedIn: boolean;
-	displayError: DisplayErrorFunction;
-}
+export function useErrorHandler(config: HandlerHookConfig): HandlerHook {
+	const { isLoggedIn } = useContext(SessionContext);
+	const { displayError } = useErrorDialog();
 
-export function errorHandlerFactory(config: ErrorHandlerFactoryConfig): HandlerFactoryResponse {
-	const { url, isLoggedIn, displayError } = config;
+	const url = window.location.toString();
 
-	return async function errorHandler({}) {
+	return useCallback(async () => {
 		const urlParams = new URLSearchParams(window.location.search);
 		const state = urlParams.get('state');
 		const error = urlParams.get('error');
@@ -20,5 +19,5 @@ export function errorHandlerFactory(config: ErrorHandlerFactoryConfig): HandlerF
 			const errorDescription = urlParams.get('error_description');
 			displayError({ title: error, description: errorDescription })
 		}
-	}
+	}, [url, isLoggedIn, displayError]);
 }

@@ -1,17 +1,17 @@
 import { logger } from "@/logger";
-import { type HandlerFactoryResponse } from "../resources";
-import { IOpenID4VCI } from "@/lib/interfaces/IOpenID4VCI";
+import { HandlerHook, HandlerHookConfig } from "../resources";
+import { useCallback, useContext } from "react";
+import OpenID4VCIContext from "@/context/OpenID4VCIContext";
 
-export type PresentationSuccessHandlerFactoryConfig = {
-	url: string
-	openID4VCI: IOpenID4VCI;
+type Config = HandlerHookConfig & {
 	setUsedAuthorizationCodes: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-export function presentationSuccessHandlerFactory(config: PresentationSuccessHandlerFactoryConfig): HandlerFactoryResponse {
-	const { url, openID4VCI, setUsedAuthorizationCodes} = config;
+export function usePresentationSuccessHandler({ goToStep, data, setUsedAuthorizationCodes }: Config): HandlerHook {
+	const url = window.location.toString();
+	const { openID4VCI } = useContext(OpenID4VCIContext);
 
-	return async function presentationSuccessHandler({}) {
+	return useCallback(async () =>  {
 		const u = new URL(url)
 
 		setUsedAuthorizationCodes((codes) => [...codes, u.searchParams.get('code')]);
@@ -23,5 +23,5 @@ export function presentationSuccessHandlerFactory(config: PresentationSuccessHan
 			logger.error("Error during the handling of authorization response", err);
 			window.history.replaceState({}, '', `${window.location.pathname}`);
 		}
-	}
+	}, [openID4VCI, setUsedAuthorizationCodes]);
 }
