@@ -1,4 +1,5 @@
 // AppProvider.tsx
+import { Provider as StateProvider } from 'react-redux';
 import React, { ReactNode } from 'react';
 
 // Import i18next and set up translations
@@ -17,6 +18,7 @@ import { NativeWrapperProvider } from './context/NativeWrapper';
 
 // Hocs
 import UriHandler from './hocs/UriHandler';
+import { store } from './store';
 
 type RootProviderProps = {
 	children: ReactNode;
@@ -24,27 +26,29 @@ type RootProviderProps = {
 
 const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 	return (
-		<StatusContextProvider>
-			<SessionContextProvider>
-				<CredentialsContextProvider>
-					<I18nextProvider i18n={i18n}>
-						<OpenID4VPContextProvider>
-							<OpenID4VCIContextProvider>
-								<UriHandler>
-									<AppSettingsProvider>
-										<NotificationProvider>
-											<NativeWrapperProvider>
-												{children}
-											</NativeWrapperProvider>
-										</NotificationProvider>
-									</AppSettingsProvider>
-								</UriHandler>
-							</OpenID4VCIContextProvider>
-						</OpenID4VPContextProvider>
-					</I18nextProvider>
-				</CredentialsContextProvider>
-			</SessionContextProvider>
-		</StatusContextProvider>
+		<StateProvider store={store}>
+			<StatusContextProvider>
+				<SessionContextProvider>
+					<CredentialsContextProvider>
+						<I18nextProvider i18n={i18n}>
+							<OpenID4VPContextProvider>
+								<OpenID4VCIContextProvider>
+									<UriHandler>
+										<AppSettingsProvider>
+											<NotificationProvider>
+												<NativeWrapperProvider>
+													{children}
+												</NativeWrapperProvider>
+											</NotificationProvider>
+										</AppSettingsProvider>
+									</UriHandler>
+								</OpenID4VCIContextProvider>
+							</OpenID4VPContextProvider>
+						</I18nextProvider>
+					</CredentialsContextProvider>
+				</SessionContextProvider>
+			</StatusContextProvider>
+		</StateProvider>
 	);
 };
 
