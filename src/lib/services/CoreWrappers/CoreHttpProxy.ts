@@ -24,7 +24,7 @@ export function useCoreHttpProxy() {
 			};
 		},
 
-		post: async <T>(url: string, body: any, config: any) => {
+		post: async <T>(url: string, body: any, config: any = { headers: {} }) => {
 			// Figure out how this should be done, search params or object...
 			const response = await httpProxy.post(url, body, config.headers);
 

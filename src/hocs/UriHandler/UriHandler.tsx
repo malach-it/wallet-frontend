@@ -13,7 +13,7 @@ import {
 	AuthorizationRequestHandler,
 	AuthorizeHandler,
 	CredentialRequestHandler,
-	PresentationHandler,
+	GeneratePresentationHandler,
 	PresentationSuccessHandler,
 	ProtocolErrorHandler
 } from "./handlers";
@@ -67,7 +67,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 	}, [currentStep])
 
 	const presentationStep = useMemo(() => {
-		return currentStep === "presentation"
+		return currentStep === "generate_presentation"
 	}, [currentStep])
 
 	const presentationSuccessStep = useMemo(() => {
@@ -92,7 +92,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 			{credentialRequestStep &&
 				<CredentialRequestHandler goToStep={goToStep} data={protocolData} />}
 			{presentationStep &&
-				<PresentationHandler goToStep={goToStep} data={protocolData} />}
+				<GeneratePresentationHandler goToStep={goToStep} data={protocolData} />}
 			{presentationSuccessStep &&
 				<PresentationSuccessHandler goToStep={goToStep} data={protocolData} />}
 			{protocolErrorStep &&
