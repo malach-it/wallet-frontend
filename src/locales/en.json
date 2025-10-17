@@ -93,11 +93,25 @@
 		"oid4vp": {
 			"parse_location": {
 				"description": {
-					"presentation": "You are about to present a credential. Your wallet need to extract information from the current location to prepare credentials presentation.",
+					"generate_presentation": "You are about to present a credential. Your wallet need to extract information from the current location to prepare credentials presentation.",
 					"presentation_success": "You have presented a credential. The verifier notifies the presentation was successful."
 				},
 				"invalid_location": "The wallet could not parse the current location",
-				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information"
+				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information."
+			},
+			"generate_presentation": {
+				"description": {
+					"send_presentation": "You are about to present a credential. Your wallet need to gather the required information to prepare credentials presentation."
+				},
+				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information.",
+				"invalid_client": "Your wallet has encountered an error. Please contact your administrator for more information.",
+				"no_credential_match": "Your wallet does not contain any credentials matching the presentation request."
+			},
+			"send_presentation": {
+				"description": {
+					"presentation_success": "You are about to present a credential. Your wallet is about to send a response to the presentation request."
+				},
+				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information."
 			}
 		}
 	},
