@@ -1,29 +1,30 @@
-import { Core } from "@wwwallet-private/client-core";
+import React, { useContext, useEffect } from "react";
 import { logger } from "@/logger";
-import { type HandlerFactoryResponse } from "../resources";
-import { HandleAuthorizationRequestError, type IOpenID4VP } from "@/lib/interfaces/IOpenID4VP";
-import { TFunction } from "i18next";
-import { DisplayErrorFunction } from "@/context/ErrorDialogContext";
+import { HandleAuthorizationRequestError } from "@/lib/interfaces/IOpenID4VP";
+import { ProtocolData, ProtocolStep } from "../resources";
 
-export type PresentationHandlerFactoryConfig = {
-	core: Core;
-	url: string
-	openID4VP: IOpenID4VP;
-	vcEntityList: any[];
-	t: TFunction<"translation", undefined>;
-	displayError: DisplayErrorFunction;
-	setUsedRequestUris: React.Dispatch<React.SetStateAction<string[]>>;
-	setRedirectUri: React.Dispatch<any>
+import CredentialsContext from "@/context/CredentialsContext";
+import OpenID4VPContext from "@/context/OpenID4VPContext";
+
+import useErrorDialog from "@/hooks/useErrorDialog";
+import {useTranslation} from "react-i18next";
+
+type PresentationHandlerProps = {
+	goToStep: (step: ProtocolStep, data: ProtocolData) => void
+	data: any
 }
 
-export function presentationHandlerFactory(config: PresentationHandlerFactoryConfig): HandlerFactoryResponse {
-	const { core, url, openID4VP, vcEntityList, t, displayError, setUsedRequestUris, setRedirectUri } = config;
+export const PresentationHandler = ({ goToStep: _goToStep, data: _data }: PresentationHandlerProps) => {
+	const { t } = useTranslation();
+	const { openID4VP } = useContext(OpenID4VPContext);
+	const { vcEntityList } = useContext(CredentialsContext);
+	const { displayError } = useErrorDialog();
+	const u = new URL(window.location.href)
 
-	return async function presentationHandler({}) {
-		const u = new URL(url)
-		setUsedRequestUris((uriArray) => [...uriArray, u.searchParams.get('request_uri')]);
+	useEffect(() => {
+		if (!vcEntityList) return
 
-		await openID4VP.handleAuthorizationRequest(u.toString(), vcEntityList).then((result) => {
+		openID4VP.handleAuthorizationRequest(u.toString(), vcEntityList).then((result) => {
 			logger.debug("Result = ", result);
 
 			if ('error' in result) {
@@ -58,13 +59,15 @@ export function presentationHandlerFactory(config: PresentationHandlerFactoryCon
 
 		}).then((res) => {
 			if (res && 'url' in res && res.url) {
-				setRedirectUri(res.url);
+				window.location.href = res.url;
 			}
 		}).catch(err => {
 			logger.debug("Failed to handle authorization req");
 			window.history.replaceState({}, '', `${window.location.pathname}`);
 			logger.error(err);
 		})
-		return;
-	}
+	}, [vcEntityList])
+	return (
+		<></>
+	)
 }

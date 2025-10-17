@@ -212,10 +212,10 @@ function SelectCredentialsPopup({ popupState, setPopupState, showPopup, hidePopu
 				return;
 			}
 			try {
-				const filteredVcEntities = vcEntityList.filter(vcEntity =>
-					popupState.options.conformantCredentialsMap[keys[currentIndex]].credentials.includes(vcEntity.batchId)
-				);
-				setVcEntities(filteredVcEntities);
+				setVcEntities(
+					Object.values(popupState.options.conformantCredentialsMap)
+						.flatMap(({ credentials }) => credentials)
+			);
 			} catch (error) {
 				logger.error('Failed to fetch data', error);
 			}
