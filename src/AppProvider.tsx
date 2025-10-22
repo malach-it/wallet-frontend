@@ -19,8 +19,8 @@ import { NotificationProvider } from './context/NotificationProvider';
 import { NativeWrapperProvider } from './context/NativeWrapper';
 
 // Hocs
-import UriHandler from './hocs/UriHandler';
 import { store } from './store';
+import { UriHandler } from './hocs/UriHandler/UriHandler';
 
 type RootProviderProps = {
 	children: ReactNode;
