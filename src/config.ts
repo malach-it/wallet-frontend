@@ -4,6 +4,7 @@ export const APP_VERSION = import.meta.env.VITE_APP_VERSION;
 export const BACKEND_URL = import.meta.env.VITE_WALLET_BACKEND_URL;
 export const DID_KEY_VERSION: DidKeyVersion = import.meta.env.VITE_DID_KEY_VERSION as DidKeyVersion;
 export const DISPLAY_CONSOLE = import.meta.env.VITE_DISPLAY_CONSOLE;
+export const CORE_CONFIGURATION = import.meta.env.VITE_CORE_CONFIGURATION;
 export const FIREBASE = import.meta.env.VITE_FIREBASE;
 export const FIREBASE_ENABLED: boolean = import.meta.env.VITE_FIREBASE_ENABLED ? JSON.parse(import.meta.env.VITE_FIREBASE_ENABLED) === true : false;
 export const MULTI_LANGUAGE_DISPLAY: boolean = import.meta.env.VITE_MULTI_LANGUAGE_DISPLAY ? JSON.parse(import.meta.env.VITE_MULTI_LANGUAGE_DISPLAY) : false;
