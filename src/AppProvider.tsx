@@ -10,6 +10,7 @@ import i18n from './i18n';
 import { StatusContextProvider } from './context/StatusContextProvider';
 import { SessionContextProvider } from './context/SessionContextProvider';
 import { CredentialsContextProvider } from './context/CredentialsContextProvider';
+import { ErrorDialogContextProvider } from './context/ErrorDialogContextProvider';
 import { OpenID4VPContextProvider } from './context/OpenID4VPContextProvider';
 import { OpenID4VCIContextProvider } from './context/OpenID4VCIContextProvider';
 import { AppSettingsProvider } from './context/AppSettingsProvider';
@@ -27,27 +28,29 @@ type RootProviderProps = {
 const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 	return (
 		<StateProvider store={store}>
-			<StatusContextProvider>
-				<SessionContextProvider>
-					<CredentialsContextProvider>
-						<I18nextProvider i18n={i18n}>
-							<OpenID4VPContextProvider>
-								<OpenID4VCIContextProvider>
-									<UriHandler>
-										<AppSettingsProvider>
-											<NotificationProvider>
-												<NativeWrapperProvider>
-													{children}
-												</NativeWrapperProvider>
-											</NotificationProvider>
-										</AppSettingsProvider>
-									</UriHandler>
-								</OpenID4VCIContextProvider>
-							</OpenID4VPContextProvider>
-						</I18nextProvider>
-					</CredentialsContextProvider>
-				</SessionContextProvider>
-			</StatusContextProvider>
+			<ErrorDialogContextProvider>
+				<StatusContextProvider>
+					<SessionContextProvider>
+						<CredentialsContextProvider>
+							<I18nextProvider i18n={i18n}>
+								<OpenID4VPContextProvider>
+									<OpenID4VCIContextProvider>
+										<UriHandler>
+											<AppSettingsProvider>
+												<NotificationProvider>
+													<NativeWrapperProvider>
+														{children}
+													</NativeWrapperProvider>
+												</NotificationProvider>
+											</AppSettingsProvider>
+										</UriHandler>
+									</OpenID4VCIContextProvider>
+								</OpenID4VPContextProvider>
+							</I18nextProvider>
+						</CredentialsContextProvider>
+					</SessionContextProvider>
+				</StatusContextProvider>
+			</ErrorDialogContextProvider>
 		</StateProvider>
 	);
 };
