@@ -19,8 +19,8 @@ export class Logger {
 		for (const [index, logLevel] of this.logLevels.entries()) {
 			if (index <= this.logLevels.indexOf(this.level)) {
 				this.group[logLevel] = Function.prototype.bind.call(
-					console.group, 
-					console, 
+					console.group,
+					console,
 					...this.logPrefix(logLevel),
 				);
 
@@ -39,7 +39,7 @@ export class Logger {
 
 	logPrefix(level: string) {
 		let prefix = `%c[${level}]%c`;
-		
+
 		if (!DISPLAY_CONSOLE) {
 			prefix += ` ${new Date().toISOString()} | `;
 		}
