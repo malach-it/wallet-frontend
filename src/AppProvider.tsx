@@ -8,6 +8,7 @@ import i18n from './i18n';
 // Contexts
 import { StatusContextProvider } from './context/StatusContextProvider';
 import { SessionContextProvider } from './context/SessionContextProvider';
+import { ClientCoreContextProvider } from './context/ClientCoreContextProvider';
 import { CredentialsContextProvider } from './context/CredentialsContextProvider';
 import { OpenID4VPContextProvider } from './context/OpenID4VPContextProvider';
 import { OpenID4VCIContextProvider } from './context/OpenID4VCIContextProvider';
@@ -28,19 +29,21 @@ const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 			<SessionContextProvider>
 				<CredentialsContextProvider>
 					<I18nextProvider i18n={i18n}>
-						<OpenID4VPContextProvider>
-							<OpenID4VCIContextProvider>
-								<UriHandler>
-									<AppSettingsProvider>
-										<NotificationProvider>
-											<NativeWrapperProvider>
-												{children}
-											</NativeWrapperProvider>
-										</NotificationProvider>
-									</AppSettingsProvider>
-								</UriHandler>
-							</OpenID4VCIContextProvider>
-						</OpenID4VPContextProvider>
+						<ClientCoreContextProvider>
+							<OpenID4VPContextProvider>
+								<OpenID4VCIContextProvider>
+									<UriHandler>
+										<AppSettingsProvider>
+											<NotificationProvider>
+												<NativeWrapperProvider>
+													{children}
+												</NativeWrapperProvider>
+											</NotificationProvider>
+										</AppSettingsProvider>
+									</UriHandler>
+								</OpenID4VCIContextProvider>
+							</OpenID4VPContextProvider>
+						</ClientCoreContextProvider>
 					</I18nextProvider>
 				</CredentialsContextProvider>
 			</SessionContextProvider>
