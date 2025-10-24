@@ -1,7 +1,8 @@
 import { useCallback, useContext, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { logger } from '@/logger';
+import { AppState } from '@/store';
 import type { ClientState, ClientStateStore } from '@wwwallet-private/client-core'
-import SessionContext from '@/context/SessionContext';
 import { generateRandomIdentifier } from '@/lib/utils/generateRandomIdentifier';
 import pkceChallenge from 'pkce-challenge';
 import { exportJWK, generateKeyPair } from 'jose';
@@ -9,10 +10,22 @@ import { exportJWK, generateKeyPair } from 'jose';
 const CLIENT_STATE_KEY = "clientStates"
 
 export function useCoreClientStateStore(): ClientStateStore {
-	const { keystore } = useContext(SessionContext);
+	const keystore = useSelector((state: AppState) => state.sessions.keystore)
 
 	const create = useCallback<ClientStateStore["create"]>(
 		async (issuer, issuer_state) => {
+			if (!keystore) {
+				return {
+					issuer,
+					issuer_state,
+					state: "",
+					code_verifier: "",
+					dpopKeyPair: {
+						publicKey: {},
+						privateKey: {},
+					},
+				}
+			}
 			const userHandleB64u = keystore.getUserHandleB64u();
 			const state = btoa(
 				JSON.stringify({
@@ -43,7 +56,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 			}
 
 			return clientState;
-		}, []);
+		}, [keystore]);
 
 	const commitChanges = useCallback<ClientStateStore["commitChanges"]>(
 		async (clientState: ClientState): Promise<ClientState> => {
