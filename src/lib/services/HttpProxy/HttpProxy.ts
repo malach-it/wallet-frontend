@@ -1,6 +1,8 @@
-import { useMemo, useRef, useContext, useEffect } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { IHttpProxy, RequestHeaders, ResponseHeaders } from '../../interfaces/IHttpProxy';
+import { AppState } from '@/store';
 import StatusContext from '@/context/StatusContext';
 import { addItem, getItem, removeItem } from '@/indexedDB';
 import { toU8 } from '@/util';
@@ -22,7 +24,7 @@ const parseCacheControl = (header: string) =>
 	);
 
 export function useHttpProxy(): IHttpProxy {
-	const { isOnline } = useContext(StatusContext);
+	const isOnline = useSelector((state: AppState) => state.status.isOnline)
 	const isOnlineRef = useRef(isOnline);
 
 	useEffect(() => {
