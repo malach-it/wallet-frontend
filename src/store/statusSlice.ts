@@ -1,17 +1,17 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 export const statusSlice = createSlice({
-  name: 'status',
-  initialState: {
+	name: 'status',
+	initialState: {
 		isOnline: false,
 		pwaInstallable: false
 	},
-  reducers: {
+	reducers: {
 		setOnline: state => { state.isOnline = true },
-		setOffline: state => { state.isOnline = false },
-		setPwaInstallable: state => { state.pwaInstallable = true },
-		setPwaNotInstallable: state => { state.pwaInstallable = false },
-  }
+			setOffline: state => { state.isOnline = false },
+			setPwaInstallable: state => { state.pwaInstallable = true },
+			setPwaNotInstallable: state => { state.pwaInstallable = false },
+	}
 });
 
 export const {
