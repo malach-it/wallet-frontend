@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import ClientCoreContext from './ClientCoreContext';
 import { Core, PresentationRequest, PresentationResponse } from '@wwwallet-private/client-core';
+import { AppState } from '@/store';
 import { useCoreHttpProxy } from '@/lib/services/CoreWrappers/CoreHttpProxy';
 import { CORE_CONFIGURATION } from '@/config';
 import { useCoreClientStateStore } from '@/lib/services/CoreWrappers/ClientStateStore';
@@ -41,7 +43,7 @@ const retrieveKeys = async (presentation_request: PresentationRequest) => {
 export const ClientCoreContextProvider = ({ children }: ClientCoreContextProviderProps) => {
 	const httpClient = useCoreHttpProxy();
 	const clientStateStore = useCoreClientStateStore();
-	const keystore = useLocalStorageKeystore(keystoreEvents);
+	const keystore = useSelector((state: AppState) => state.sessions.keystore)
 	const vpTokenSigner = {
 		sign: async (payload: unknown, presentation_request: PresentationRequest) => {
 			const { vpjwt } = await keystore.signJwtPresentation(
