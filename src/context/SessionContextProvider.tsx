@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useCallback, useRef, useMemo, useState } 
 
 import StatusContext from './StatusContext';
 import { useApi } from '../api';
+import { setApi, setKeystore } from '@/store';
 import { KeystoreEvent, useLocalStorageKeystore } from '../services/LocalStorageKeystore';
 import keystoreEvents from '../services/keystoreEvents';
 import SessionContext, { SessionContextValue } from './SessionContext';
@@ -14,8 +15,10 @@ import { OHTTP_KEY_CONFIG } from '@/config';
 export const SessionContextProvider = ({ children }) => {
 	const { isOnline } = useContext(StatusContext);
 	const api = useApi(isOnline);
+	setApi(api);
 	const keystore = useLocalStorageKeystore(keystoreEvents);
 	const { getCalculatedWalletState } = keystore;
+	setKeystore(keystore);
 	const isLoggedIn = useMemo(() => api.isLoggedIn() && keystore.isOpen(), [keystore, api]);
 
 	const [walletStateLoaded, setWalletStateLoaded] = useState<boolean>(false);
