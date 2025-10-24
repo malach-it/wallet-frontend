@@ -3,7 +3,7 @@ import statusReducer from "./statusSlice";
 import sessionsReducer from "./sessionsSlice";
 
 export const store = configureStore({
-  reducer: {
+	reducer: {
 		status: statusReducer,
 		sessions: sessionsReducer,
 	}

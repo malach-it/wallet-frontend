@@ -8,19 +8,19 @@ type State = {
 }
 
 export const sessionsSlice = createSlice({
-  name: 'status',
-  initialState: {
+	name: 'status',
+	initialState: {
 		keystore: null,
 		api: null,
 	},
-  reducers: {
+	reducers: {
 		setKeystore: (state: State, { payload }: { payload: LocalStorageKeystore }) => {
 			state.keystore = payload
 		},
 		setApi: (state: State, { payload }: { payload: BackendApi }) => {
 			state.api = payload
 		},
-  }
+	}
 });
 
 export const {
