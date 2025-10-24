@@ -1,4 +1,5 @@
 // AppProvider.tsx
+import { Provider as StateProvider } from 'react-redux';
 import React, { ReactNode } from 'react';
 
 // Import i18next and set up translations
@@ -8,7 +9,9 @@ import i18n from './i18n';
 // Contexts
 import { StatusContextProvider } from './context/StatusContextProvider';
 import { SessionContextProvider } from './context/SessionContextProvider';
+import { ClientCoreContextProvider } from './context/ClientCoreContextProvider';
 import { CredentialsContextProvider } from './context/CredentialsContextProvider';
+import { ErrorDialogContextProvider } from './context/ErrorDialogContextProvider';
 import { OpenID4VPContextProvider } from './context/OpenID4VPContextProvider';
 import { OpenID4VCIContextProvider } from './context/OpenID4VCIContextProvider';
 import { AppSettingsProvider } from './context/AppSettingsProvider';
@@ -16,7 +19,8 @@ import { NotificationProvider } from './context/NotificationProvider';
 import { NativeWrapperProvider } from './context/NativeWrapper';
 
 // Hocs
-import UriHandler from './hocs/UriHandler';
+import { store } from './store';
+import { UriHandler } from './hocs/UriHandler/UriHandler';
 
 type RootProviderProps = {
 	children: ReactNode;
@@ -24,27 +28,33 @@ type RootProviderProps = {
 
 const AppProvider: React.FC<RootProviderProps> = ({ children }) => {
 	return (
-		<StatusContextProvider>
-			<SessionContextProvider>
-				<CredentialsContextProvider>
-					<I18nextProvider i18n={i18n}>
-						<OpenID4VPContextProvider>
-							<OpenID4VCIContextProvider>
-								<UriHandler>
-									<AppSettingsProvider>
-										<NotificationProvider>
-											<NativeWrapperProvider>
-												{children}
-											</NativeWrapperProvider>
-										</NotificationProvider>
-									</AppSettingsProvider>
-								</UriHandler>
-							</OpenID4VCIContextProvider>
-						</OpenID4VPContextProvider>
-					</I18nextProvider>
-				</CredentialsContextProvider>
-			</SessionContextProvider>
-		</StatusContextProvider>
+		<StateProvider store={store}>
+			<ErrorDialogContextProvider>
+				<StatusContextProvider>
+					<SessionContextProvider>
+						<CredentialsContextProvider>
+							<I18nextProvider i18n={i18n}>
+								<ClientCoreContextProvider>
+									<OpenID4VPContextProvider>
+										<OpenID4VCIContextProvider>
+											<UriHandler>
+												<AppSettingsProvider>
+													<NotificationProvider>
+														<NativeWrapperProvider>
+															{children}
+														</NativeWrapperProvider>
+													</NotificationProvider>
+												</AppSettingsProvider>
+											</UriHandler>
+										</OpenID4VCIContextProvider>
+									</OpenID4VPContextProvider>
+								</ClientCoreContextProvider>
+							</I18nextProvider>
+						</CredentialsContextProvider>
+					</SessionContextProvider>
+				</StatusContextProvider>
+			</ErrorDialogContextProvider>
+		</StateProvider>
 	);
 };
 

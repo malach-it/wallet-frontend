@@ -54,6 +54,72 @@
 		"legendRequested": "Requested by verifier",
 		"legendRequired": "Required"
 	},
+	"errors": {
+		"invalid_location": "Invalid location",
+		"invalid_request": "Invalid request",
+		"invalid_issuer": "Invalid issuer",
+		"invalid_client": "Invalid client",
+		"invalid_parameters": "Invalid parameters",
+		"oid4vci": {
+			"parse_location": {
+				"description": {
+					"authorization_request": "You are about to obtain a credential. Before you authenticate to the issuer, your wallet need to gather information to enable the redirection.",
+					"credential_request": "You are about to obtain a credential. The issuer is about to validate your holder information to issue a credential.",
+					"presentation": "You are about to present credentials. Given your consent, your wallet is to prepare the presentation answering to the verifier request.",
+					"presentation_success": "You have presented a credential. The verifier informs that the process was successful.",
+					"protocol_error": "The issuer or verifier encountered an error while issuing or presenting credentials."
+				},
+				"invalid_location": "The location you are being navigating to is invalid or malformed. Please contact your administrator for more information.",
+				"invalid_request": "Your wallet has performed a request to the issuer that could not be successful. Please contact your administrator for more information",
+				"invalid_issuer": "The given issuer information does not allow to perform the request. Please contact your administrator for more information.",
+				"invalid_client": "The wallet configuration could not allow the transaction. Please contact your administrator."
+			},
+			"authorization_request": {
+				"description": {
+					"undefined": "You are about to obtain a credential. Before you continue, the issuer requests further authorization.",
+					"authorization_request": "You are about to obtain a credential. Before you continue, the issuer requests further authorization.",
+					"authorize": "You are about to obtain a credential. The issuer requests authentication to gather the required information.",
+					"authorization_challenge": "You are about to obtain a credential. The issuer requests the presentation of a credential to gather the required information."
+				},
+				"invalid_request": "Your wallet has performed a request to the issuer that could not be successful. Please contact your administrator for more information",
+				"invalid_issuer": "The given issuer information does not allow to perform the request. Please contact your administrator for more information.",
+				"invalid_client": "The wallet configuration could not allow the transaction. Please contact your administrator."
+			},
+			"credential_request": {
+				"description": {
+					"credential_success": "You are about to obtain a credential. The wallet has gathered all the required information to send a request to the issuer."
+				},
+				"invalid_request": "Your wallet has performed a request to the issuer that could not be successful. Please contact your administrator for more information",
+				"invalid_issuer": "The given issuer information does not allow to perform the request. Please contact your administrator for more information.",
+				"invalid_client": "The wallet configuration could not allow the transaction. Please contact your administrator.",
+				"invalid_parameters": "Given issuance parameters are invalid. Please contact your administrator."
+			}
+		},
+		"oid4vp": {
+			"parse_location": {
+				"description": {
+					"generate_presentation": "You are about to present a credential. Your wallet need to extract information from the current location to prepare credentials presentation.",
+					"presentation_success": "You have presented a credential. The verifier notifies the presentation was successful."
+				},
+				"invalid_location": "The wallet could not parse the current location",
+				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information."
+			},
+			"generate_presentation": {
+				"description": {
+					"send_presentation": "You are about to present a credential. Your wallet need to gather the required information to prepare credentials presentation."
+				},
+				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information.",
+				"invalid_client": "Your wallet has encountered an error. Please contact your administrator for more information.",
+				"no_credential_match": "Your wallet does not contain any credentials matching the presentation request."
+			},
+			"send_presentation": {
+				"description": {
+					"presentation_success": "You are about to present a credential. Your wallet is about to send a response to the presentation request."
+				},
+				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information."
+			}
+		}
+	},
 	"expiredRibbon": {
 		"expired": "Expired"
 	},

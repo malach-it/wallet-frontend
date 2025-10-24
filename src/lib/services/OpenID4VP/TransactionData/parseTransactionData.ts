@@ -1,3 +1,4 @@
+import { logger } from "@/logger";
 import { fromBase64Url } from "@/util";
 import { TransactionDataRequest, TransactionDataRequestObject } from "./TransactionDataRequest/TransactionDataRequestObject";
 import { withTransactionData } from "./TransactionDataComponent";
@@ -46,7 +47,7 @@ export function parseTransactionData(transaction_data: string[], presentation_de
 		return parsedTransactionData;
 	}
 	catch (e) {
-		console.error(e);
+		logger.error(e);
 		return null;
 	}
 

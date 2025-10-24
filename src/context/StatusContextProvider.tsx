@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
+import { logger } from '@/logger';
 import StatusContext, { Connectivity } from './StatusContext';
 import { useLocalStorage } from '@/hooks/useStorage';
+import { AppState, setOffline, setOnline, setPwaInstallable, setPwaNotInstallable } from '@/store';
 
 // Function to calculate speed based on RTT (lower RTT means higher speed)
 function calculateNetworkSpeed(rtt: number): number {
@@ -37,14 +40,14 @@ function getNavigatorOnlineStatus(): boolean {
 }
 
 export const StatusContextProvider = ({ children }: { children: React.ReactNode }) => {
-	const [isOnline, setIsOnline] = useState<boolean | null>(null);
+	const isOnline = useSelector((state: AppState) => state.status.isOnline)
+	const pwaInstallable = useSelector((state: AppState) => state.status.pwaInstallable)
 	const [updateAvailable, setUpdateAvailable] = useState(false);
 	const [connectivity, setConnectivity] = useState<Connectivity>({
 		navigatorOnline: null,
 		Internet: null,
 		speed: null,
 	});
-	const [pwaInstallable, setPwaInstallable] = useState(null);
 	const [hidePwaPrompt, setHidePwaPrompt] = useLocalStorage<boolean>("hidePwaPrompt", false);
 
 	const lastUpdateCallTime = React.useRef<number>(0);
@@ -80,12 +83,11 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			};
 		});
 
-		setIsOnline((prev) => {
-			if (prev === internetConnection.isConnected) {
-				return prev; // No change in `isOnline`
-			}
-			return internetConnection.isConnected;
-		});
+		if (internetConnection.isConnected) {
+			setOnline()
+		} else {
+			setOffline()
+		}
 	}
 
 	useEffect(() => {
@@ -101,7 +103,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 	}, []);
 
 	useEffect(() => {
-		console.log('Online status:', isOnline);
+		logger.debug('Online status:', isOnline);
 	}, [isOnline]);
 
 	// Polling logic when offline
@@ -175,13 +177,17 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 		// it will not trigger if pwa is already installed
 		const handleBeforeInstallPrompt = (event) => {
 			event.preventDefault();
-			setPwaInstallable(event);
+			if (event) {
+				setPwaInstallable();
+			} else {
+				setPwaNotInstallable();
+			}
 		};
 
 		// appinstaled is triggered if pwa was installed
 		// we want to remove installation prompts in that case
 		const handleAppInstalled = () => {
-			setPwaInstallable(null);
+			setPwaNotInstallable();
 		};
 
 		window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
