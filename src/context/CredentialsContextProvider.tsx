@@ -1,4 +1,8 @@
 import React, { useState, useCallback, useContext, useRef, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { AppState } from '@/store';
+import { useApi } from '@/api';
+import StatusContext from './StatusContext';
 import SessionContext from './SessionContext';
 import { initializeCredentialEngine } from "../lib/initializeCredentialEngine";
 import { CredentialVerificationError } from "wallet-common/dist/error";
@@ -14,14 +18,18 @@ type WalletStateCredential = CurrentSchema.WalletStateCredential;
 
 
 export const CredentialsContextProvider = ({ children }) => {
-	const { api, keystore, isLoggedIn } = useContext(SessionContext);
+	const { isOnline } = useContext(StatusContext);
+	const api = useApi(isOnline);
+	const { isLoggedIn } = useContext(SessionContext);
+	const calculatedWalletState = useSelector((state: AppState) => {
+		return state.sessions.calculatedWalletState
+	})
 	const [vcEntityList, setVcEntityList] = useState<ExtendedVcEntity[] | null>(null);
 	const [latestCredentials, setLatestCredentials] = useState<Set<number>>(new Set());
 	const [currentSlide, setCurrentSlide] = useState<number>(1);
 	const httpProxy = useHttpProxy();
 	const helper = useOpenID4VCIHelper();
 	const credentialNumber = useRef<number | null>(null)
-	const { getCalculatedWalletState } = keystore;
 	const [credentialEngine, setCredentialEngine] = useState<any | null>(null);
 	// const engineRef = useRef<any>(null);
 	const prevIsLoggedIn = useRef<boolean>(null);
@@ -30,16 +38,16 @@ export const CredentialsContextProvider = ({ children }) => {
 	const [pendingTransactions, setPendingTransactions] = useState(null);
 
 	useEffect(() => {
-		if (!getCalculatedWalletState) return;
+		if (!calculatedWalletState) return;
 
-		const S = getCalculatedWalletState();
+		const S = calculatedWalletState;
 		if (!S) return;
 
 		const sessionsWithTx = S.credentialIssuanceSessions.filter(
 			(session) => session.credentialEndpoint?.transactionId
 		);
 		setPendingTransactions(sessionsWithTx);
-	}, [getCalculatedWalletState]);
+	}, [calculatedWalletState]);
 
 	const initializeEngine = useCallback(async (useCache: boolean) => {
 		const trustedCertificates: string[] = [];
@@ -105,7 +113,7 @@ export const CredentialsContextProvider = ({ children }) => {
 		const engine = credentialEngine;
 		if (!engine) return null;
 
-		const S = getCalculatedWalletState();
+		const S = calculatedWalletState;
 		if (!S) {
 			return null;
 		}
@@ -177,7 +185,7 @@ export const CredentialsContextProvider = ({ children }) => {
 		// Sorting by id
 		filteredVcEntityList.reverse();
 		return filteredVcEntityList;
-	}, [getCalculatedWalletState, parseCredential, credentialEngine]);
+	}, [httpProxy, helper, calculatedWalletState, parseCredential, credentialEngine]);
 
 
 	const getData = useCallback(async () => {
@@ -207,12 +215,12 @@ export const CredentialsContextProvider = ({ children }) => {
 	}, [fetchVcData, setVcEntityList]);
 
 	useEffect(() => {
-		if (!getCalculatedWalletState || !credentialEngine || !isLoggedIn) {
+		if (!calculatedWalletState || !credentialEngine || !isLoggedIn) {
 			return;
 		}
 		logger.debug("Triggerring getData()")
 		getData();
-	}, [getData, getCalculatedWalletState, credentialEngine, isLoggedIn]);
+	}, [getData, calculatedWalletState, credentialEngine, isLoggedIn]);
 
 	if (isLoggedIn && !credentialEngine) {
 		return (
