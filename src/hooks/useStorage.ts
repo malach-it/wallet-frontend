@@ -1,5 +1,8 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
 import { jsonParseTaggedBinary, jsonStringifyTaggedBinary } from '../util';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppState, setStorageValue } from '@/store';
+import { createSelector } from '@reduxjs/toolkit';
 
 type ClearHandle = () => void;
 export type UseStorageHandle<T> = [T, Dispatch<SetStateAction<T>>, ClearHandle];
@@ -8,32 +11,38 @@ type SetValueEvent<T> = UseStorageEvent & { name: string, value: T };
 
 function makeUseStorage<T>(
 	storage: Storage,
-	description: string,
+	description: "Local storage" | "Session storage",
 ): (name: string, initialValue: T) => UseStorageHandle<T> {
 	if (!storage) {
 		throw new Error(`${description} is not available.`);
 	}
 
 	return (name: string, initialValue: T) => {
-		const [initValue,] = useState(initialValue);
+		const dispatch = useDispatch();
 
 		const getCurrentValue = useCallback(
 			() => {
 				const storedValueStr = storage.getItem(name);
 				try {
 					if (storedValueStr !== null) {
-						return jsonParseTaggedBinary(storedValueStr);
+						const value = jsonParseTaggedBinary(storedValueStr);
+						return value;
 					}
 				} catch (e) {
 					// Fall back to initValue
 					storage.removeItem(name);
 				}
-				return initValue;
+				return initialValue;
 			},
-			[initValue, name],
+			[],
 		);
 
-		const [currentValue, setValue] = useState(getCurrentValue);
+		const currentValue = useSelector(createSelector(
+			(state: AppState) => {
+				return state.sessions.storage[description].currentValue;
+			},
+			(currentValue: unknown) => currentValue[name] || getCurrentValue()
+		))
 
 		const updateValue = useCallback(
 			(action: SetStateAction<T>): void => {
@@ -56,7 +65,7 @@ function makeUseStorage<T>(
 					})
 				);
 			},
-			[getCurrentValue, name],
+			[name],
 		);
 
 		const clearValue = useCallback(
@@ -71,12 +80,12 @@ function makeUseStorage<T>(
 						detail: {
 							storageArea: storage,
 							name,
-							value: initValue,
+							value: getCurrentValue(),
 						},
 					})
 				);
 			},
-			[initValue, name],
+			[name],
 		);
 
 		useEffect(
@@ -89,10 +98,10 @@ function makeUseStorage<T>(
 				const listener = (event: StorageEvent) => {
 					if (event.storageArea === storage) {
 						if (event.key === name) { // Storage.setItem(name, value)
-							setValue(jsonParseTaggedBinary(event.newValue));
+							dispatch(setStorageValue({ type: description, name, value: jsonParseTaggedBinary(event.newValue) }));
 
 						} else if (event.key === null) { // Storage.clear()
-							setValue(initValue);
+							dispatch(setStorageValue({ type: description, name, value: null }));
 						}
 					}
 				};
@@ -102,7 +111,7 @@ function makeUseStorage<T>(
 					window.removeEventListener('storage', listener);
 				};
 			},
-			[initValue, name]
+			[name]
 		);
 
 		useEffect(
@@ -112,7 +121,7 @@ function makeUseStorage<T>(
 				// update their state, including the instance that caused the change.
 				const listener = (event: CustomEvent<SetValueEvent<T>>) => {
 					if (event.detail.storageArea === storage && event.detail.name === name) {
-						setValue(event.detail.value);
+						dispatch(setStorageValue({ type: description, name, value: event.detail.value }));
 					}
 				};
 				window.addEventListener('useStorage.set', listener);
