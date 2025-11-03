@@ -1,4 +1,4 @@
-import { useContext, useMemo, useRef, useEffect } from 'react';
+import { useContext, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { IHttpProxy, RequestHeaders, ResponseHeaders } from '../../interfaces/IHttpProxy';
@@ -29,11 +29,6 @@ export function useHttpProxy(): IHttpProxy {
 	const { obliviousKeyConfig } = useContext(SessionContext);
 
 	const isOnline = useSelector((state: AppState) => state.status.isOnline)
-	const isOnlineRef = useRef(isOnline);
-
-	useEffect(() => {
-		isOnlineRef.current = isOnline;
-	}, [isOnline]);
 
 	const proxy = useMemo(() => ({
 		async get(
@@ -43,7 +38,7 @@ export function useHttpProxy(): IHttpProxy {
 		): Promise<{ status: number; headers: ResponseHeaders; data: unknown }> {
 			const useCache = options?.useCache;
 			const now = Math.floor(Date.now() / 1000);
-			const online = isOnlineRef.current;
+			const online = isOnline;
 			const isBinaryRequest = /\.(png|jpe?g|gif|webp|bmp|tiff?|ico)(\?.*)?(#.*)?$/i.test(url);
 			const cacheKey = isBinaryRequest ? `blob:${url}` : `data:${url}`;
 
@@ -231,7 +226,7 @@ export function useHttpProxy(): IHttpProxy {
 						};
 					}
 
-					if (isOnlineRef.current) {
+					if (isOnline) {
 						await removeItem('proxyCache', cacheKey, 'proxyCache');
 					}
 
@@ -304,7 +299,7 @@ export function useHttpProxy(): IHttpProxy {
 				};
 			}
 		},
-	}), [obliviousKeyConfig]);
+	}), [obliviousKeyConfig, isOnline]);
 
 	return proxy;
 }
