@@ -1,8 +1,6 @@
-import { useCallback, useContext, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { logger } from '@/logger';
-import { AppState } from '@/store';
+import { useCallback, useMemo } from 'react';
 import type { ClientState, ClientStateStore } from '@wwwallet-private/client-core'
+import { jsonParseTaggedBinary } from '@/util';
 import { generateRandomIdentifier } from '@/lib/utils/generateRandomIdentifier';
 import pkceChallenge from 'pkce-challenge';
 import { exportJWK, generateKeyPair } from 'jose';
@@ -10,23 +8,9 @@ import { exportJWK, generateKeyPair } from 'jose';
 const CLIENT_STATE_KEY = "clientStates"
 
 export function useCoreClientStateStore(): ClientStateStore {
-	const keystore = useSelector((state: AppState) => state.sessions.keystore)
-
 	const create = useCallback<ClientStateStore["create"]>(
 		async (issuer, issuer_state) => {
-			if (!keystore) {
-				return {
-					issuer,
-					issuer_state,
-					state: "",
-					code_verifier: "",
-					dpopKeyPair: {
-						publicKey: {},
-						privateKey: {},
-					},
-				}
-			}
-			const userHandleB64u = keystore.getUserHandleB64u();
+			const userHandleB64u = jsonParseTaggedBinary(sessionStorage.getItem("userHandle"));
 			const state = btoa(
 				JSON.stringify({
 					userHandleB64u: userHandleB64u,
@@ -34,7 +18,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 				})
 			).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
-				const { code_verifier } = await pkceChallenge()
+			const { code_verifier } = await pkceChallenge()
 
 			const { publicKey, privateKey } = await generateKeyPair("ES256", { extractable: true });
 			const clientState = {
@@ -56,7 +40,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 			}
 
 			return clientState;
-		}, [keystore]);
+		}, []);
 
 	const commitChanges = useCallback<ClientStateStore["commitChanges"]>(
 		async (clientState: ClientState): Promise<ClientState> => {
@@ -78,7 +62,7 @@ export function useCoreClientStateStore(): ClientStateStore {
 				)
 
 				if (!found) {
-					newClientStates.push(clientState)
+					newClientStates.unshift(clientState)
 				}
 
 				localStorage.setItem(CLIENT_STATE_KEY, JSON.stringify(newClientStates.slice(0, 24)))
