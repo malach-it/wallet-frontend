@@ -17,6 +17,7 @@ import {
 	PresentationSuccessHandler,
 	ProtocolErrorHandler
 } from "./handlers";
+import StatusContext from "@/context/StatusContext";
 
 type UriHandlerProps = {
 	children: React.ReactNode;
@@ -29,12 +30,13 @@ export const UriHandler = (props: UriHandlerProps) => {
 	const [ protocolData, setProtocolData ] = useState<ProtocolData>(null);
 
 	const core = useClientCore();
+	const { isOnline } = useContext(StatusContext);
 	const { isLoggedIn } = useContext(SessionContext);
 	const { displayError } = useErrorDialog();
 	const { t } = useTranslation();
 
 	useEffect(() => {
-		if (!isLoggedIn) return
+		if (!isOnline || !isLoggedIn) return
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
@@ -52,7 +54,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 			}
 			else logger.error(err);
 		})
-	}, [isLoggedIn, core, displayError, t])
+	}, [isOnline, isLoggedIn, core, displayError, t])
 
 	const authorizationRequestStep = useMemo(() => {
 		return currentStep === "authorization_request"
