@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import ClientCoreContext from './ClientCoreContext';
 import { Core, PresentationRequest, PresentationResponse } from '@wwwallet-private/client-core';
@@ -10,6 +10,7 @@ import axios from 'axios';
 import {EncryptJWT, importJWK} from 'jose';
 import {useLocalStorageKeystore} from '@/services/LocalStorageKeystore';
 import keystoreEvents from '@/services/keystoreEvents';
+import SessionContext from './SessionContext';
 
 type ClientCoreContextProviderProps = {
 	children: React.ReactNode;
@@ -43,17 +44,19 @@ const retrieveKeys = async (presentation_request: PresentationRequest) => {
 export const ClientCoreContextProvider = ({ children }: ClientCoreContextProviderProps) => {
 	const httpClient = useCoreHttpProxy();
 	const clientStateStore = useCoreClientStateStore();
-	const keystore = useSelector((state: AppState) => state.sessions.keystore)
-	const vpTokenSigner = {
-		sign: async (payload: unknown, presentation_request: PresentationRequest) => {
-			const { vpjwt } = await keystore.signJwtPresentation(
-				presentation_request.nonce,
-				presentation_request.client_id,
-				Object.values(payload).flat(),
-				null, // TODO manage transaction data
-			);
+	// const { keystore } = useContext(SessionContext)
+	// const { signJwtPresentation } = keystore
 
-			return vpjwt;
+	const vpTokenSigner = useMemo(() => ({
+		sign: async (payload: unknown, presentation_request: PresentationRequest) => {
+			// const { vpjwt } = await signJwtPresentation(
+			// 	presentation_request.nonce,
+			// 	presentation_request.client_id,
+			// 	Object.values(payload).flat(),
+			// 	null, // TODO manage transaction data
+			// );
+
+			// return vpjwt;
 		},
 		encryptResponse: async (response: PresentationResponse, presentation_request: PresentationRequest) => {
 			const { jwk, alg } = await retrieveKeys(presentation_request);
@@ -75,7 +78,7 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
 				})
 				.encrypt(publicKey);
 		},
-	}
+	}), [])
 
 	const core = useMemo(() => {
 		return new Core({
@@ -84,7 +87,7 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
 			vpTokenSigner,
 			...CORE_CONFIGURATION
 		});
-	}, [httpClient, clientStateStore]);
+	}, [httpClient, clientStateStore, vpTokenSigner]);
 
 	return (
 		<ClientCoreContext.Provider value={core}>
