@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
 import { logger } from '@/logger';
@@ -40,6 +40,7 @@ function getNavigatorOnlineStatus(): boolean {
 }
 
 export const StatusContextProvider = ({ children }: { children: React.ReactNode }) => {
+	const dispatch = useDispatch();
 	const isOnline = useSelector((state: AppState) => state.status.isOnline)
 	const pwaInstallable = useSelector((state: AppState) => state.status.pwaInstallable)
 	const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -84,9 +85,9 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 		});
 
 		if (internetConnection.isConnected) {
-			setOnline()
+			dispatch(setOnline());
 		} else {
-			setOffline()
+			dispatch(setOffline());
 		}
 	}
 
