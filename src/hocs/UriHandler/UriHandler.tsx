@@ -40,6 +40,13 @@ export const UriHandler = (props: UriHandlerProps) => {
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
+				window.history.replaceState(
+					{},
+					'',
+					`${window.location.pathname}?protocol=${presentationRequest.protocol}`,
+				);
+
+				// @ts-expect-error
 				goToStep(presentationRequest.nextStep, presentationRequest.data)
 			}
 		}).catch(err => {

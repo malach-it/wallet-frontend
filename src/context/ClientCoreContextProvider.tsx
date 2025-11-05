@@ -1,8 +1,8 @@
 import React, { useContext, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import ClientCoreContext from './ClientCoreContext';
 import { Core, PresentationRequest, PresentationResponse } from '@wwwallet-private/client-core';
-import { AppState } from '@/store';
+import { AppDispatch, AppState, signJwtPresentation } from '@/store';
 import { useCoreHttpProxy } from '@/lib/services/CoreWrappers/CoreHttpProxy';
 import { CORE_CONFIGURATION } from '@/config';
 import { useCoreClientStateStore } from '@/lib/services/CoreWrappers/ClientStateStore';
@@ -42,6 +42,7 @@ const retrieveKeys = async (presentation_request: PresentationRequest) => {
 };
 
 export const ClientCoreContextProvider = ({ children }: ClientCoreContextProviderProps) => {
+	const dispatch = useDispatch() as AppDispatch;
 	const httpClient = useCoreHttpProxy();
 	const clientStateStore = useCoreClientStateStore();
 	// const { keystore } = useContext(SessionContext)
@@ -49,14 +50,16 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
 
 	const vpTokenSigner = useMemo(() => ({
 		sign: async (payload: unknown, presentation_request: PresentationRequest) => {
-			// const { vpjwt } = await signJwtPresentation(
-			// 	presentation_request.nonce,
-			// 	presentation_request.client_id,
-			// 	Object.values(payload).flat(),
-			// 	null, // TODO manage transaction data
-			// );
+			const result = await dispatch(signJwtPresentation({
+				nonce: presentation_request.nonce,
+				audience: presentation_request.client_id,
+				verifiableCredentials: Object.values(payload).flat(),
+			}));
 
-			// return vpjwt;
+			console.log(result);
+			if (result.payload) return (result.payload as { vpjwt }).vpjwt;
+
+			throw new Error(JSON.stringify(result));
 		},
 		encryptResponse: async (response: PresentationResponse, presentation_request: PresentationRequest) => {
 			const { jwk, alg } = await retrieveKeys(presentation_request);

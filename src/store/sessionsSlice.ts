@@ -1,4 +1,5 @@
 import { BackendApi } from "@/api";
+import { ExtendedVcEntity } from "@/context/CredentialsContext";
 import { EncryptedContainer } from "@/services/keystore";
 import { LocalStorageKeystore } from "@/services/LocalStorageKeystore";
 import {WalletState} from "@/services/WalletStateSchemaCommon";
@@ -17,6 +18,7 @@ type State = {
 			currentValue: Record<string, unknown>;
 		};
 	};
+	vcEntityList: ExtendedVcEntity[];
 }
 
 export const sessionsSlice = createSlice({
@@ -34,6 +36,7 @@ export const sessionsSlice = createSlice({
 			},
 		},
 		api: null,
+		vcEntityList: null,
 	},
 	reducers: {
 		setKeystore: (state: State, { payload }: { payload: LocalStorageKeystore }) => {
@@ -54,6 +57,17 @@ export const sessionsSlice = createSlice({
 		setApi: (state: State, { payload }: { payload: BackendApi }) => {
 			state.api = payload
 		},
+		setVcEntityList: (state: State, { payload }: { payload: ExtendedVcEntity[] }) => {
+			const current = state.vcEntityList || []
+			const newList = payload.filter(vcEntity => {
+				if (!current.length) return true
+
+				return !current.map(({ batchId }) => batchId).includes(vcEntity.batchId)
+			})
+
+			if (newList.length) state.vcEntityList = newList.concat(current)
+			if (payload.length < current.length) state.vcEntityList = payload
+		},
 	}
 });
 
@@ -63,5 +77,6 @@ export const {
 	setCalculatedWalletState,
 	setStorageValue,
 	setApi,
+	setVcEntityList,
 } = sessionsSlice.actions;
 export default sessionsSlice.reducer;

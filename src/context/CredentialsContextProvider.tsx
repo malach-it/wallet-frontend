@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useContext, useRef, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { AppState } from '@/store';
+import React, { useState, useCallback, useContext, useRef, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppState, setVcEntityList, store } from '@/store';
 import { useApi } from '@/api';
 import StatusContext from './StatusContext';
 import SessionContext from './SessionContext';
@@ -18,13 +18,16 @@ type WalletStateCredential = CurrentSchema.WalletStateCredential;
 
 
 export const CredentialsContextProvider = ({ children }) => {
+	const dispatch = useDispatch();
 	const { isOnline } = useContext(StatusContext);
 	const api = useApi(isOnline);
 	const { isLoggedIn } = useContext(SessionContext);
 	const calculatedWalletState = useSelector((state: AppState) => {
 		return state.sessions.calculatedWalletState
 	})
-	const [vcEntityList, setVcEntityList] = useState<ExtendedVcEntity[] | null>(null);
+	const vcEntityList = useSelector((state: AppState) => {
+		return state.sessions.vcEntityList
+	})
 	const [latestCredentials, setLatestCredentials] = useState<Set<number>>(new Set());
 	const [currentSlide, setCurrentSlide] = useState<number>(1);
 	const httpProxy = useHttpProxy();
@@ -40,10 +43,7 @@ export const CredentialsContextProvider = ({ children }) => {
 	useEffect(() => {
 		if (!calculatedWalletState) return;
 
-		const S = calculatedWalletState;
-		if (!S) return;
-
-		const sessionsWithTx = S.credentialIssuanceSessions.filter(
+		const sessionsWithTx = calculatedWalletState.credentialIssuanceSessions.filter(
 			(session) => session.credentialEndpoint?.transactionId
 		);
 		setPendingTransactions(sessionsWithTx);
@@ -197,16 +197,17 @@ export const CredentialsContextProvider = ({ children }) => {
 					setLatestCredentials(new Set());
 				}, 2000);
 			}
-			setVcEntityList((prev) => {
-				if (
-					!prev ||
-					prev.length !== storedCredentials.length ||
-					prev.some((vc, i) => vc.batchId !== storedCredentials[i].batchId)
-				) {
-					return storedCredentials;
-				}
-				return prev;
-			});
+			dispatch(setVcEntityList(storedCredentials));
+// 			setVcEntityList((prev) => {
+// 				if (
+// 					!prev ||
+// 					prev.length !== storedCredentials.length ||
+// 					prev.some((vc, i) => vc.batchId !== storedCredentials[i].batchId)
+// 				) {
+// 					return storedCredentials;
+// 				}
+// 				return prev;
+// 			});
 			credentialNumber.current = storedCredentials?.length;
 
 		} catch (error) {
@@ -220,7 +221,29 @@ export const CredentialsContextProvider = ({ children }) => {
 		}
 		logger.debug("Triggerring getData()")
 		getData();
-	}, [getData, calculatedWalletState, credentialEngine, isLoggedIn]);
+	}, [getData, calculatedWalletState, vcEntityList, credentialEngine, isLoggedIn]);
+
+	const value = useMemo(() => ({
+		vcEntityList,
+		latestCredentials,
+		fetchVcData,
+		getData,
+		currentSlide,
+		setCurrentSlide,
+		parseCredential,
+		credentialEngine,
+		pendingTransactions
+	}), [
+		vcEntityList,
+		latestCredentials,
+		fetchVcData,
+		getData,
+		currentSlide,
+		setCurrentSlide,
+		parseCredential,
+		credentialEngine,
+		pendingTransactions
+	])
 
 	if (isLoggedIn && !credentialEngine) {
 		return (
@@ -229,7 +252,7 @@ export const CredentialsContextProvider = ({ children }) => {
 	}
 	else {
 		return (
-			<CredentialsContext.Provider value={{ vcEntityList, latestCredentials, fetchVcData, getData, currentSlide, setCurrentSlide, parseCredential, credentialEngine, pendingTransactions }}>
+			<CredentialsContext.Provider value={value}>
 				{children}
 			</CredentialsContext.Provider>
 		);

@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
+import { useSelector } from "react-redux";
 import { DcqlQuery } from "dcql";
 import React, { useContext, useEffect } from "react";
 import { jsonToLog, logger } from "@/logger";
+import { AppState } from "@/store";
 import { ProtocolData, ProtocolStep } from "../resources";
 
-import CredentialsContext from "@/context/CredentialsContext";
 import OpenID4VPContext from "@/context/OpenID4VPContext";
 
 import useErrorDialog from "@/hooks/useErrorDialog";
@@ -20,10 +21,11 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 	const { presentation_request, dcql_query } = data;
 	const { t } = useTranslation();
 	const { openID4VP } = useContext(OpenID4VPContext);
-	const { vcEntityList } = useContext(CredentialsContext);
+	const vcEntityList = useSelector((state: AppState) => {
+		return state.sessions.vcEntityList
+	})
 	const { displayError } = useErrorDialog();
 	const core = useClientCore();
-	const u = new URL(window.location.href);
 
 	const pathExists = (vcEntity: any, claims: DcqlQuery.Output["credentials"][0]["claims"]) => {
 		return claims.some((claim: any) => {
@@ -32,7 +34,7 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 	}
 
 	function getIn(object: unknown, path: Array<string>): boolean {
-		if (!path.length) return false
+		if (!path.length) return true
 
 		const current = path.shift()
 
