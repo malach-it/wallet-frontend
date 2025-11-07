@@ -2,7 +2,7 @@ import { BackendApi } from "@/api";
 import { ExtendedVcEntity } from "@/context/CredentialsContext";
 import { EncryptedContainer } from "@/services/keystore";
 import { LocalStorageKeystore } from "@/services/LocalStorageKeystore";
-import {WalletState} from "@/services/WalletStateSchemaCommon";
+import { WalletState } from "@/services/WalletStateSchemaCommon";
 import { createSlice } from "@reduxjs/toolkit";
 
 type State = {

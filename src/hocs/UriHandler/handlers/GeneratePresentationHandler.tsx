@@ -49,14 +49,16 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 		if (!vcEntityList) return
 
 		const credentials = vcEntityList.filter(vcEntity => {
+			// TODO manage presentation definitions (not present in final specification)
 			return dcql_query.credentials.some(credentialDefinition => {
+				// TODO apply other filtering rules
 				return (vcEntityList || []).some(vcEntity => {
-					console.log(credentialDefinition.format)
-					console.log(vcEntity.format)
 					return pathExists(vcEntity, credentialDefinition.claims)
 				})
 			})
 		})
+
+		// TODO apply selective disclosure to presented credentials
 
 		if (!credentials.length) {
 			return displayError({
@@ -83,9 +85,6 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 				}
 			})
 
-		console.log(vcEntityList);
-		console.log("jsonedMap", jsonedMap);
-
 		openID4VP.promptForCredentialSelection(
 			jsonedMap,
 			verifierHostname,
@@ -100,14 +99,18 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 				})
 			})
 
+			// TODO generate transaction data
+
 			return core.generatePresentation({ presentation_credentials, presentation_request }).then(response => {
+				// goToStep(response.nextStep, response.data)
 				return core.sendPresentation({
 					presentation_request: response.data.presentation_request,
 					vp_token: response.data.vp_token,
 				}).then(response => {
+					// TODO store verifiable presentation
+					// goToStep(response.nextStep, response.data)
 					window.location.href = response.data.redirect_uri
 				})
-				// goToStep(response.nextStep, response.data)
 			}).catch(err => {
 				if (err instanceof OauthError) {
 					logger.error(t(`errors.${err.error}`), jsonToLog(err));
@@ -121,24 +124,6 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 				else logger.error(err);
 			})
 		});
-		// }).then((selection) => {
-		// 	if (!(selection instanceof Map)) {
-		// 		return;
-		// 	}
-
-		// 	logger.debug("Selection = ", selection);
-
-		// 	return openID4VP.sendAuthorizationResponse(selection, vcEntityList);
-
-		// }).then((res) => {
-		// 	if (res && 'url' in res && res.url) {
-		// 		window.location.href = res.url;
-		// 	}
-		// }).catch(err => {
-		// 	logger.debug("Failed to handle authorization req");
-		// 	window.history.replaceState({}, '', `${window.location.pathname}`);
-		// 	logger.error(err);
-		// })
 	}, [vcEntityList])
 	return (
 		<></>

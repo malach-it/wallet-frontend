@@ -10,7 +10,7 @@ interface StatusContextValue {
 	isOnline: boolean;
 	updateAvailable: boolean;
 	connectivity: Connectivity;
-	pwaInstallable: Event;
+	pwaInstallable: boolean;
 	dismissPwaPrompt: () => void;
 	hidePwaPrompt: boolean;
 	updateOnlineStatus: (forceCheck?: boolean) => Promise<void>;

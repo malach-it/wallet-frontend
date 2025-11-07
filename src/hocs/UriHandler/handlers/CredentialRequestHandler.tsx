@@ -10,8 +10,7 @@ import SessionContext from "@/context/SessionContext";
 import { useTranslation } from "react-i18next";
 import useClientCore from "@/hooks/useClientCore";
 import useErrorDialog from "@/hooks/useErrorDialog";
-
-import MessagePopup from "@/components/Popups/MessagePopup";
+import CredentialsContext from "@/context/CredentialsContext";
 
 export type CredentialRequestProps = {
 	goToStep: (step: ProtocolStep, data: ProtocolData) => void
@@ -28,6 +27,7 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 	} = data
 	const { displayError } = useErrorDialog();
 	const { api, keystore } = useContext(SessionContext);
+	const { credentialEngine } = useContext<any>(CredentialsContext);
 
 	const { t } = useTranslation();
 	const core = useClientCore();
@@ -40,6 +40,7 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 	useEffect(() => {
 		(async () => {
 			try {
+				// TODO generate attestation proofs
 				const [
 					{ proof_jwts },
 					proofsData,
@@ -53,19 +54,19 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 						}
 					})
 				)
+
+				// TODO commit jwt proof
 				// await api.updatePrivateData(proofsData);
 				// await proofsCommit()
 
-				// 	})()
-				// }, [])
-
-				// const requestCredentials = async () => {
 				const credentials = await Promise.all(
 					credential_configuration_ids.map(async (credential_configuration_id: string, index: number) => {
+						// TODO manage c_nonce in response (not present in final specification)
+						// TODO manage transaction data
+						// TODO set a maximum flow ttl from settings
 						const { data: { credentials } } = await core.credential({
 							access_token,
 							state,
-							c_nonce,
 							credential_configuration_id,
 							proofs: {
 								jwt: proof_jwts,
@@ -79,20 +80,28 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 				const batchId = WalletStateUtils.getRandomUint32();
 				const [, credentialsData, credentialsCommit] = await keystore.addCredentials(
 					await Promise.all(credentials
-														.flatMap(([credential_configuration_id, credentials], index: number) => {
-															return credentials.map(async ({ credential }) => {
-																const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
-																return {
-																	data: credential,
-																	format: "vc+sd-jwt",
-																	kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
-																	credentialConfigurationId: credential_configuration_id,
-																	credentialIssuerIdentifier: issuer_metadata.issuer,
-																	batchId,
-																	instanceId: index,
-																}
-															})
-														}))
+						.flatMap(([credential_configuration_id, credentials], index: number) => {
+							return credentials.map(async ({ credential }) => {
+								const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
+
+								// TODO move credential validation in the core
+								// TODO MSOMDoc (case ?) issuer validation
+								const isValid = await credentialEngine.credentialParsingEngine.parse({ rawCredential: credential })
+								// TODO display validation warnings
+								// TODO display consent if there are warnings
+								if (!isValid.success) return
+
+								return {
+									data: credential,
+									format: "vc+sd-jwt",
+									kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
+									credentialConfigurationId: credential_configuration_id,
+									credentialIssuerIdentifier: issuer_metadata.issuer,
+									batchId,
+									instanceId: index,
+								}
+							})
+						}))
 				)
 
 				await api.updatePrivateData(credentialsData);
@@ -117,13 +126,5 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 
 	return (
 		<></>
-		// <MessagePopup type="success" onClose={requestCredentials} message={{
-		// 	title: "You are requesting credentials",
-		// 	description: credential_configuration_ids.flatMap((credential_configuration_id: string) => {
-		// 		return issuer_metadata
-		// 			.credential_configurations_supported[credential_configuration_id]
-		// 			.display.map(({ name }) => name)
-		// 	}).join("<br />")
-		// }} />
 	)
 }
