@@ -1,8 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { calculateJwkThumbprint, decodeJwt, JWK } from "jose";
 import { OauthError } from "@wwwallet-private/client-core";
-import { logger, jsonToLog } from "../../../logger";
-import { WalletStateUtils } from "../../../services/WalletStateUtils";
+import { OPENID4VCI_PROOF_TYPE_PRECEDENCE } from "@/config";
+import { logger, jsonToLog } from "@/logger";
+import { WalletStateUtils } from "@/services/WalletStateUtils";
 import { ProtocolData, ProtocolStep } from "../resources";
 
 import SessionContext from "@/context/SessionContext";
@@ -16,6 +17,8 @@ export type CredentialRequestProps = {
 	goToStep: (step: ProtocolStep, data: ProtocolData) => void
 	data: any
 }
+
+const configProofTypes = OPENID4VCI_PROOF_TYPE_PRECEDENCE.split(',') as string[];
 
 export const CredentialRequestHandler = ({ goToStep, data }) => {
 	const {
@@ -37,23 +40,78 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 	const audience = issuer_metadata.issuer;
 	const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience).client_id;
 
+	const requestKeyAttestation = useCallback(async (jwks: JWK[], nonce: string) => {
+		try {
+			const response = await api.post("/wallet-provider/key-attestation/generate", {
+				jwks,
+				openid4vci: {
+					nonce: nonce,
+				}
+			});
+			const { key_attestation } = response.data;
+			if (!key_attestation || typeof key_attestation != 'string') {
+				logger.debug("Cannot parse key_attestation from wallet-backend-server");
+				return null;
+			}
+			return { key_attestation };
+		}
+		catch (err) {
+			logger.debug(err);
+			return null;
+		}
+	}, [api]
+	);
+
 	useEffect(() => {
 		(async () => {
 			try {
-				// TODO generate attestation proofs
-				const [
-					{ proof_jwts },
-					proofsData,
-					proofsCommit
-				] = await keystore.generateOpenid4vciProofs(
-					credential_configuration_ids.map(() => {
-						return {
-							nonce: c_nonce,
-							audience,
-							issuer,
-						}
-					})
-				)
+				const proofTypes = credential_configuration_ids.map(
+					(credential_configuration_id: string) => {
+						return configProofTypes.find(proofType => {
+							return Object.keys(
+								issuer_metadata
+									.credential_configurations_supported[credential_configuration_id]
+									?.proof_types_supported || {}
+							).includes(proofType)
+						})
+					}
+				).filter(proofType => proofType)
+
+				const proofs: {
+					jwt?: string[];
+					attestation?: string[];
+				}= {}
+
+				if (proofTypes.filter(proofType => proofType === 'jwt').length) {
+					const [
+						{ proof_jwts },
+						jwtProofsData,
+						jwtProofsCommit
+					] = await keystore.generateOpenid4vciProofs(
+						proofTypes.filter(proofType => proofType === 'jwt').map(() => {
+							return {
+								nonce: c_nonce,
+								audience,
+								issuer,
+							}
+						})
+					)
+					proofs.jwt = proof_jwts
+				}
+
+				if (proofTypes.filter(proofType => proofType === 'attestation').length) {
+					const [{ keypairs }, attestationPublicKeys, attestationPublicKeysCommit] = await keystore.generateKeypairs(
+						proofTypes.filter(proofType => proofType === 'attestation').length
+					);
+
+					const proof_attestation = await requestKeyAttestation(
+						keypairs.map(({ publicKey }) => publicKey),
+							c_nonce
+					).then(({ key_attestation }) => key_attestation)
+
+					proofs.attestation = [proof_attestation]
+				}
+
 
 				// TODO commit jwt proof
 				// await api.updatePrivateData(proofsData);
@@ -66,9 +124,7 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 							access_token,
 							state,
 							credential_configuration_id,
-							proofs: {
-								jwt: proof_jwts,
-							},
+							proofs,
 						})
 
 						return [credential_configuration_id, credentials]
