@@ -1,7 +1,9 @@
+import React, { useContext, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { DcqlQuery } from "dcql";
-import React, { useContext, useEffect } from "react";
+import { SDJwt } from "@sd-jwt/core";
+import { present } from "@sd-jwt/present";
 import { jsonToLog, logger } from "@/logger";
 import { AppState } from "@/store";
 import { ProtocolData, ProtocolStep } from "../resources";
@@ -11,6 +13,13 @@ import OpenID4VPContext from "@/context/OpenID4VPContext";
 import useErrorDialog from "@/hooks/useErrorDialog";
 import useClientCore from "@/hooks/useClientCore";
 import { OauthError } from "@wwwallet-private/client-core";
+
+const hasher = (data: string | ArrayBuffer, alg: string) => {
+	const encoded =
+		typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
+
+	return crypto.subtle.digest(alg, encoded).then((v) => new Uint8Array(v));
+}
 
 type GeneratePresentationHandlerProps = {
 	goToStep: (step: ProtocolStep, data: ProtocolData) => void
@@ -34,31 +43,46 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 	}
 
 	function getIn(object: unknown, path: Array<string>): boolean {
-		if (!path.length) return true
+		if (!path.length) return false
+		const currentPath = [...path]
 
-		const current = path.shift()
+		const current = currentPath.shift()
 
-		if (!path.length) return !!object[current]
+		if (!currentPath.length) return !!object[current]
 
-		Object.keys(object).some(key => {
-			return getIn(object[key], [...path])
+		return Object.keys(object).some(key => {
+			if (key === current) {
+				return getIn(object[key], currentPath)
+			}
+			return false
 		})
+	}
+
+	function putIn(object: unknown, path: Array<string>, value: unknown): unknown {
+		if (!path.length) return object
+		const currentPath = [...path]
+
+		const current = currentPath.shift()
+
+		if (!currentPath.length) {
+			object[current] = value
+			return object
+		}
+
+		object[current] = putIn(object[current] || {}, currentPath, value)
+
+		return object
 	}
 
 	useEffect(() => {
 		if (!vcEntityList) return
 
 		const credentials = vcEntityList.filter(vcEntity => {
-			// TODO manage presentation definitions (not present in final specification)
 			return dcql_query.credentials.some(credentialDefinition => {
 				// TODO apply other filtering rules
-				return (vcEntityList || []).some(vcEntity => {
-					return pathExists(vcEntity, credentialDefinition.claims)
-				})
+				return pathExists(vcEntity, credentialDefinition.claims)
 			})
 		})
-
-		// TODO apply selective disclosure to presented credentials
 
 		if (!credentials.length) {
 			return displayError({
@@ -89,12 +113,25 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 			jsonedMap,
 			verifierHostname,
 			t('selectCredentialPopup.purposeNotSpecified'),
-		).then(selection => {
+		).then(async selection => {
+			const presentFrame = {}
+			const claims = dcql_query.credentials.flatMap(({ claims }) => claims)
+			claims.forEach(claim => {
+				putIn(presentFrame, claim.path, true)
+			})
+			const disclosedCredentials = await Promise.all(credentials.map(async vcEntity => {
+				const sdjwt = await SDJwt.fromEncode(vcEntity.data, hasher)
+				return {
+					vcEntity,
+					credential: await present(vcEntity.data, presentFrame, hasher)
+				}
+			}))
+
 			const presentation_credentials = []
 			selection.forEach((batchId, credential_id) => {
 				presentation_credentials.push({
 					credential_id,
-					credential: vcEntityList.find(({ batchId: e }) => e === batchId).data,
+					credential: disclosedCredentials.find(({ vcEntity }) => vcEntity.batchId === batchId).credential,
 					context: batchId,
 				})
 			})
