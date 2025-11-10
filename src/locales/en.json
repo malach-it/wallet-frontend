@@ -87,7 +87,8 @@
 			},
 			"credential_request": {
 				"description": {
-					"credential_success": "You are about to obtain a credential. The wallet has gathered all the required information to send a request to the issuer."
+					"credential": "You are about to obtain a credential. The wallet has gathered all the required information to send a request to the issuer.",
+					"credential_success": "You are about to obtain a credential. The wallet is parsing the issuer credential response."
 				},
 				"invalid_request": "Your wallet has performed a request to the issuer that could not be successful. Please contact your administrator for more information",
 				"invalid_issuer": "The given issuer information does not allow to perform the request. Please contact your administrator for more information.",
