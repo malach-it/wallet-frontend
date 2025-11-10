@@ -50,7 +50,7 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
 
 	const vpTokenSigner = useMemo(() => ({
 		sign: async (payload: unknown, presentation_request: PresentationRequest) => {
-			// TODO manage MSoMDoc signatures
+			// TODO manage MSoMDoc presentation signature
 			const result = await dispatch(signJwtPresentation({
 				nonce: presentation_request.nonce,
 				audience: presentation_request.client_id,

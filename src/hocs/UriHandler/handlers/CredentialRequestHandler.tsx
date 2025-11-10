@@ -61,9 +61,7 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 
 				const credentials = await Promise.all(
 					credential_configuration_ids.map(async (credential_configuration_id: string, index: number) => {
-						// TODO manage c_nonce in response (not present in final specification)
 						// TODO manage transaction data
-						// TODO set a maximum flow ttl from settings
 						const { data: { credentials } } = await core.credential({
 							access_token,
 							state,
@@ -85,7 +83,7 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 								const { cnf }  = decodeJwt(credential) as { cnf: { jwk: JWK } };
 
 								// TODO move credential validation in the core
-								// TODO MSOMDoc (case ?) issuer validation
+								// TODO MSoMDoc issuer validation
 								const isValid = await credentialEngine.credentialParsingEngine.parse({ rawCredential: credential })
 								// TODO display validation warnings
 								// TODO display consent if there are warnings
