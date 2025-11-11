@@ -96,6 +96,8 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 							}
 						})
 					)
+
+					// TODO commit jwt proof
 					proofs.jwt = proof_jwts
 				}
 
@@ -109,13 +111,9 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 							c_nonce
 					).then(({ key_attestation }) => key_attestation)
 
+					// TODO commit attestation proof
 					proofs.attestation = [proof_attestation]
 				}
-
-
-				// TODO commit jwt proof
-				// await api.updatePrivateData(proofsData);
-				// await proofsCommit()
 
 				const credentials = await Promise.all(
 					credential_configuration_ids.map(async (credential_configuration_id: string, index: number) => {
