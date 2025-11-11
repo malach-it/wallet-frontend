@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { EncryptJWT, importJWK } from 'jose';
-import {useDispatch} from "react-redux";
+import { useDispatch } from "react-redux";
 import { PresentationRequest, PresentationResponse } from '@wwwallet-private/client-core';
 import { AppDispatch, signJwtPresentation } from '@/store';
 
