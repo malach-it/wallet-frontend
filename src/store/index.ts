@@ -72,6 +72,7 @@ export {
 	setCalculatedWalletState,
 	setStorageValue,
 	setApi,
+	setLoggedIn,
 	setVcEntityList,
 } from "./sessionsSlice";
 
