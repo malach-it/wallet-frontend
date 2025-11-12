@@ -1,3 +1,4 @@
+import React from "react";
 import { ProtocolData, ProtocolStep } from "../resources";
 
 type AuthorizeHandlerProps = {
@@ -11,6 +12,6 @@ export const AuthorizeHandler = ({ data }: AuthorizeHandlerProps) => {
 	window.location.href = authorize_url
 
 	return (
-		<></>
+		<>redirected</>
 	)
 }
