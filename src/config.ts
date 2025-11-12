@@ -6,7 +6,7 @@ export const LOG_LEVEL = import.meta.env.VITE_LOG_LEVEL;
 export const BACKEND_URL = import.meta.env.VITE_WALLET_BACKEND_URL;
 export const DID_KEY_VERSION: DidKeyVersion = import.meta.env.VITE_DID_KEY_VERSION as DidKeyVersion;
 export const DISPLAY_CONSOLE = import.meta.env.VITE_DISPLAY_CONSOLE;
-export const CORE_CONFIGURATION = import.meta.env.VITE_CORE_CONFIGURATION;
+export const CORE_CONFIGURATION = typeof import.meta.env.VITE_CORE_CONFIGURATION === 'object' ? import.meta.env.VITE_CORE_CONFIGURATION : JSON.parse(import.meta.env.VITE_CORE_CONFIGURATION);
 export const MULTI_LANGUAGE_DISPLAY: boolean = import.meta.env.VITE_MULTI_LANGUAGE_DISPLAY ? JSON.parse(import.meta.env.VITE_MULTI_LANGUAGE_DISPLAY) : false;
 export const I18N_WALLET_NAME_OVERRIDE: string | undefined = import.meta.env.VITE_I18N_WALLET_NAME_OVERRIDE;
 export const INACTIVE_LOGOUT_MILLIS = (import.meta.env.VITE_INACTIVE_LOGOUT_SECONDS ? parseInt(import.meta.env.VITE_INACTIVE_LOGOUT_SECONDS, 10) : 60 * 15) * 1000

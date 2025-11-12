@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useCallback, useRef, useState, useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 
 import StatusContext from './StatusContext';
 import { useApi } from '../api';
 import { logger } from '@/logger';
+import { setLoggedIn } from '@/store';
 import { KeystoreEvent, useLocalStorageKeystore } from '../services/LocalStorageKeystore';
 import keystoreEvents from '../services/keystoreEvents';
 import SessionContext, { SessionContextValue } from './SessionContext';
@@ -13,6 +15,7 @@ import { fetchKeyConfig, HpkeConfig } from '@/lib/utils/ohttpHelpers';
 import { OHTTP_KEY_CONFIG } from '@/config';
 
 export const SessionContextProvider = ({ children }) => {
+	const dispatch = useDispatch();
 	const { isOnline } = useContext(StatusContext);
 	const api = useApi(isOnline);
 	const keystore = useLocalStorageKeystore(keystoreEvents);
@@ -43,6 +46,10 @@ export const SessionContextProvider = ({ children }) => {
 	useEffect(() => {
 		clearSessionRef.current = clearSession;
 	}, [clearSession]);
+
+	useEffect(() => {
+		dispatch(setLoggedIn(isLoggedIn));
+	}, [isLoggedIn]);
 
 	// The close() will dispatch Event CloseSessionTabLocal in order to call the clearSession
 	const logout = useCallback(async () => {
