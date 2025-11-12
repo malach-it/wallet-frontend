@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { OauthError } from "@wwwallet-private/client-core";
 import { jsonToLog, logger } from "@/logger";
@@ -39,7 +39,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 	const { t } = useTranslation();
 
 	useEffect(() => {
-		if (!isOnline || !isLoggedIn) return
+		if (currentStep || !isOnline || !isLoggedIn) return
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
