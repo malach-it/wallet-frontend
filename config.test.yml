@@ -1,0 +1,34 @@
+---
+urls: &urls
+  backend_url: &backend_url "http://backend.test"
+  wallet_url: &wallet_url "http://wallet.test"
+  wallet_callback_url: &wallet_callback_url "http://wallet.test/cb"
+  ws_url: &ws_url "ws://ws.wallet.test"
+
+wallet:
+  environment: development
+  log_level: info
+  ws_url: *ws_url
+  wallet_backend_url: *backend_url
+  login_with_password: false
+  did_key_version: jwk_jcs-pub
+  app_version: $npm_package_version
+  generate_sourcemap: false
+  display_console: true
+  webauthn_rpid: localhost
+  openid4vci_redirect_uri: *wallet_callback_url
+  openid4vci_proof_type_precedence: jwt,attestation
+  openid4vp_san_dns_check: false
+  openid4vp_san_dns_check_ssl_certs: false
+  validate_credentials_with_trust_anchors: true
+  multi_language_display: true
+  static_public_url: *wallet_url
+  static_name: wwWallet
+  core_configuration:
+    wallet_url: *wallet_callback_url
+    wallet_callback_url: *wallet_callback_url
+    dpop_ttl_seconds: 60
+    static_clients:
+    - issuer: "http://issuer.test"
+      client_id: "client_id"
+      client_secret: "client_secret"
