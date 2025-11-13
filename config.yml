@@ -1,0 +1,25 @@
+---
+urls: &urls
+  backend_url: &backend_url "http://wallet-backend-server:8002"
+  wallet_url: &wallet_url "http://localhost:3000"
+  ws_url: &ws_url "ws://localhost:8002"
+
+wallet:
+  environment: production
+  log_level: info
+  ws_url: *ws_url
+  wallet_backend_url: *backend_url
+  login_with_password: false
+  did_key_version: jwk_jcs-pub
+  app_version: $npm_package_version
+  generate_sourcemap: false
+  display_console: true
+  webauthn_rpid: localhost
+  openid4vci_redirect_uri: *wallet_url
+  openid4vci_proof_type_precedence: attestation,jwt
+  openid4vp_san_dns_check: false
+  openid4vp_san_dns_check_ssl_certs: false
+  validate_credentials_with_trust_anchors: true
+  multi_language_display: true
+  static_public_url: *wallet_url
+  static_name: wwWallet
