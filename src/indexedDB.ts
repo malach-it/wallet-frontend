@@ -2,6 +2,7 @@
 import localforage from 'localforage';
 // import { UserId } from './api/types';
 // import { fromBase64Url } from './util';
+import { logger } from './logger';
 
 const stores = {
 	users: localforage.createInstance({
@@ -72,9 +73,9 @@ export async function initializeDataSource(): Promise<void> {
 
 		// await migrateDataSource();
 
-		console.log('Database initialized successfully');
+		logger.debug('Database initialized successfully');
 	} catch (err) {
-		console.error('Error initializing database', err);
+		logger.error('Error initializing database', err);
 	}
 }
 
@@ -94,7 +95,7 @@ export async function initializeDataSource(): Promise<void> {
 // 	await Promise.all(userHandles.map(async (userHandleB64u) => {
 // 		const userId = UserId.fromUserHandle(fromBase64Url(userHandleB64u));
 // 		const userNumericId: string = (await UserHandleToUserID.getItem(userHandleB64u)).toString();
-// 		console.log("Migrating UserHandleToUserID:", [userHandleB64u, userNumericId]);
+// 		logger.debug("Migrating UserHandleToUserID:", [userHandleB64u, userNumericId]);
 
 // 		const user: any = await stores.users.getItem(userNumericId);
 // 		if (user) {
@@ -133,7 +134,7 @@ export async function addItem(storeName: string, key: any, value: any, forceMapp
 		const mappedStoreName = forceMappedStoreName ?? getMappedStoreName(storeName);
 		await stores[mappedStoreName].setItem(key, value);
 	} catch (err) {
-		console.error('Error adding item', err);
+		logger.error('Error adding item', err);
 	}
 }
 
@@ -143,7 +144,7 @@ export async function getItem(storeName: string, key: any, forceMappedStoreName?
 		const value = await stores[mappedStoreName].getItem(key);
 		return value;
 	} catch (err) {
-		console.error('Error retrieving item', err);
+		logger.error('Error retrieving item', err);
 		return null;
 	}
 }
@@ -155,10 +156,10 @@ export async function getAllItems(storeName: string): Promise<any[]> {
 		await stores[mappedStoreName].iterate((value, key) => {
 			items.push({ key, value });
 		});
-		console.log('All items retrieved successfully');
+		logger.debug('All items retrieved successfully');
 		return items;
 	} catch (err) {
-		console.error('Error retrieving all items', err);
+		logger.error('Error retrieving all items', err);
 		return [];
 	}
 }
@@ -168,6 +169,6 @@ export async function removeItem(storeName: string, key: any, forceMappedStoreNa
 		const mappedStoreName = forceMappedStoreName ?? getMappedStoreName(storeName);
 		await stores[mappedStoreName].removeItem(key);
 	} catch (err) {
-		console.error('Error removing item', err);
+		logger.error('Error removing item', err);
 	}
 }
