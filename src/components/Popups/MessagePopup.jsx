@@ -6,7 +6,7 @@ import Button from '../Buttons/Button';
 import PopupLayout from './PopupLayout';
 
 const MessagePopup = ({ type, message, onClose }) => {
-	const { title, description } = message || {};
+	const { title, emphasis, description } = message || {};
 	const { t } = useTranslation();
 
 	const IconComponent = type === 'error' ? FaExclamationCircle : FaCheckCircle;
@@ -31,6 +31,9 @@ const MessagePopup = ({ type, message, onClose }) => {
 				</button>
 			</div>
 			<hr className={`mb-2 border-t border-${color}/80`} />
+			{emphasis && <p className="text-gray-700 bg-gray-200 p-4">
+				{emphasis}
+			</p>}
 			<p className="mb-2 mt-4 dark:text-white">
 				{description}
 			</p>
