@@ -10,6 +10,8 @@
     "@hpke/dhkem-x25519": "^1.6.4",
     "@reduxjs/toolkit": "^2.9.0",
     "@sd-jwt/core": "^0.15.0",
+    "@sd-jwt/crypto-nodejs": "^0.17.0",
+    "@sd-jwt/present": "^0.17.0",
     "@wwwallet-private/client-core": "link:../../wwwallet-core/packages/client-core",
     "ajv": "^8.17.1",
     "asn1js": "^3.0.5",
