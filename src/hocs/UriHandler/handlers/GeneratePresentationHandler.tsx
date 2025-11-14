@@ -124,7 +124,7 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 				else logger.error(err);
 			})
 		});
-	}, [vcEntityList])
+	}, [vcEntityList]) // eslint-disable-line
 	return (
 		<></>
 	)

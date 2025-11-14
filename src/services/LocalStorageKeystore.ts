@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 
@@ -183,7 +183,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				}
 			})
 		}
-	}, [userHandleB64u, readPrivateDataFromIdb]);
+	}, [dispatch, userHandleB64u, readPrivateDataFromIdb]);
 
 
 	const writePrivateDataOnIdb = useCallback(async (privateData: EncryptedContainer | null, userHandleB64u: string) => {
@@ -196,7 +196,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 	const clearPrivateData = useCallback(async (userHandleB64u: string) => {
 		dispatch(setPrivateData(null));
 		await writePrivateDataOnIdb(null, userHandleB64u);
-	}, [writePrivateDataOnIdb]);
+	}, [dispatch, writePrivateDataOnIdb]);
 
 	const closeSessionTabLocal = useCallback(
 		async (): Promise<void> => {
@@ -215,7 +215,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 			clearGlobalUserHandleB64u();
 			clearGlobalTabId();
 		},
-		[idb, privateData, clearGlobalUserHandleB64u, clearGlobalTabId, clearPrivateData, userHandleB64u],
+		[dispatch, idb, clearGlobalUserHandleB64u, clearGlobalTabId, clearPrivateData, userHandleB64u],
 	);
 
 	const assertKeystoreOpen = useCallback(async (): Promise<[EncryptedContainer, CryptoKey]> => {
@@ -319,7 +319,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				setMainKey(await keystore.exportMainKey(newMainKey));
 			},
 		];
-	}, [setPrivateData, setMainKey, assertKeystoreOpen, userHandleB64u, writePrivateDataOnIdb]);
+	}, [dispatch, setMainKey, assertKeystoreOpen, userHandleB64u, writePrivateDataOnIdb]);
 
 	const finishUnlock = useCallback(async (
 		{ mainKey, privateData }: UnlockSuccess,
@@ -364,6 +364,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		const [, , newCalculatedWalletState] = await keystore.openPrivateData(mainKey, privateData);
 		dispatch(setCalculatedWalletState(newCalculatedWalletState));
 	}, [
+		dispatch,
 		setUserHandleB64u,
 		setGlobalUserHandleB64u,
 		setCachedUsers,
@@ -383,7 +384,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				dispatch(setCalculatedWalletState(newCalculatedWalletState));
 			});
 		}
-	}, [mainKey, privateData, calculatedWalletState, openPrivateData]);
+	}, [dispatch, mainKey, privateData, calculatedWalletState, openPrivateData]);
 
 	const init = useCallback(async (
 		mainKey: CryptoKey,
@@ -418,7 +419,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 					: null
 			);
 		},
-		[finishUnlock, setPrivateData, writePrivateDataOnIdb, userHandleB64u]
+		[dispatch, finishUnlock, writePrivateDataOnIdb, userHandleB64u]
 	);
 
 	const initPrf = useCallback(
@@ -479,7 +480,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				},
 			];
 		},
-		[setPrivateData, writePrivateDataOnIdb, userHandleB64u, assertKeystoreOpen]
+		[dispatch, writePrivateDataOnIdb, userHandleB64u, assertKeystoreOpen]
 	);
 
 	const deletePrf = useCallback(
@@ -493,7 +494,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				},
 			];
 		},
-		[privateData, setPrivateData, writePrivateDataOnIdb, userHandleB64u]
+		[dispatch, privateData, writePrivateDataOnIdb, userHandleB64u]
 	);
 
 	const unlockPrf = useCallback(
@@ -517,7 +518,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 					: null
 			);
 		},
-		[finishUnlock, setPrivateData, writePrivateDataOnIdb, userHandleB64u]
+		[dispatch, finishUnlock, writePrivateDataOnIdb, userHandleB64u]
 	);
 
 	const getPasswordOrPrfKeyFromSession = useCallback(
@@ -571,7 +572,7 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 				throw new Error("Session not initialized");
 			}
 		},
-		[privateData, setPrivateData, writePrivateDataOnIdb, userHandleB64u]
+		[dispatch, privateData, writePrivateDataOnIdb, userHandleB64u]
 	);
 
 	const signJwtPresentation = useCallback(

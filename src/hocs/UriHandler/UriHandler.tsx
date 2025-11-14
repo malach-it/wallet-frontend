@@ -35,34 +35,6 @@ export const UriHandler = (props: UriHandlerProps) => {
 	const { displayError } = useErrorDialog();
 	const { t } = useTranslation();
 
-	useEffect(() => {
-		if (!isOnline || !isLoggedIn) return
-
-		core.location(window.location).then(presentationRequest => {
-			if (presentationRequest.protocol) {
-				window.history.replaceState(
-					{},
-					'',
-					`${window.location.pathname}?protocol=${presentationRequest.protocol}`,
-				);
-
-				// @ts-expect-error
-				goToStep(presentationRequest.nextStep, presentationRequest.data)
-			}
-		}).catch(err => {
-			if (err instanceof OauthError) {
-				logger.error(t(`errors.${err.error}`), jsonToLog(err));
-				displayError({
-					title: t(`errors.${err.error}`),
-					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
-					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
-					err,
-				});
-			}
-			else logger.error(err);
-		})
-	}, [isOnline, isLoggedIn, core, displayError, t])
-
 	const authorizationRequestStep = useMemo(() => {
 		return currentStep === "authorization_request"
 	}, [currentStep])
@@ -91,6 +63,34 @@ export const UriHandler = (props: UriHandlerProps) => {
 		setStep(step)
 		setProtocolData(data)
 	}, [])
+
+	useEffect(() => {
+		if (!isOnline || !isLoggedIn) return
+
+		core.location(window.location).then(presentationRequest => {
+			if (presentationRequest.protocol) {
+				window.history.replaceState(
+					{},
+					'',
+					`${window.location.pathname}?protocol=${presentationRequest.protocol}`,
+				);
+
+				// @ts-expect-error
+				goToStep(presentationRequest.nextStep, presentationRequest.data)
+			}
+		}).catch(err => {
+			if (err instanceof OauthError) {
+				logger.error(t(`errors.${err.error}`), jsonToLog(err));
+				displayError({
+					title: t(`errors.${err.error}`),
+					emphasis: t(`errors.${err.data.protocol}.${err.data.currentStep}.description.${err.data.nextStep}`),
+					description: t(`errors.${err.data.protocol}.${err.data.currentStep}.${err.error}`),
+					err,
+				});
+			}
+			else logger.error(err);
+		})
+	}, [goToStep, isOnline, isLoggedIn, core, displayError, t])
 
 	return (
 		<>

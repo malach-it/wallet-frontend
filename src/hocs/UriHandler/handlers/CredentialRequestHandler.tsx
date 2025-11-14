@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect } from "react";
 import { calculateJwkThumbprint, decodeJwt, JWK } from "jose";
 import { OauthError } from "@wwwallet-private/client-core";
 import { logger, jsonToLog } from "../../../logger";
@@ -18,13 +18,6 @@ export type CredentialRequestProps = {
 }
 
 export const CredentialRequestHandler = ({ goToStep, data }) => {
-	const {
-		issuer_metadata,
-		client_state: clientState,
-		access_token,
-		state,
-		c_nonce
-	} = data
 	const { displayError } = useErrorDialog();
 	const { api, keystore } = useContext(SessionContext);
 	const { credentialEngine } = useContext<any>(CredentialsContext);
@@ -32,20 +25,24 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 	const { t } = useTranslation();
 	const core = useClientCore();
 
-	const credential_configuration_ids = clientState
-			?.credential_configuration_ids || [];
-	const audience = issuer_metadata.issuer;
-	const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience).client_id;
-
 	useEffect(() => {
+		const {
+			issuer_metadata,
+			client_state: clientState,
+			access_token,
+			state,
+			c_nonce
+		} = data
+
+		const credential_configuration_ids = clientState
+				?.credential_configuration_ids || [];
+		const audience = issuer_metadata.issuer;
+		const issuer = core.config.static_clients.find(({ issuer }) => issuer === audience).client_id;
+
 		(async () => {
 			try {
 				// TODO generate attestation proofs
-				const [
-					{ proof_jwts },
-					proofsData,
-					proofsCommit
-				] = await keystore.generateOpenid4vciProofs(
+				const [{ proof_jwts }, , ] = await keystore.generateOpenid4vciProofs(
 					credential_configuration_ids.map(() => {
 						return {
 							nonce: c_nonce,
@@ -92,7 +89,7 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 								return {
 									data: credential,
 									format: "vc+sd-jwt",
-									kid: cnf && await calculateJwkThumbprint(cnf.jwk as JWK) || "",
+									kid: (cnf && await calculateJwkThumbprint(cnf.jwk as JWK)) || "",
 									credentialConfigurationId: credential_configuration_id,
 									credentialIssuerIdentifier: issuer_metadata.issuer,
 									batchId,
@@ -120,7 +117,7 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 				}
 			}
 		})()
-	}, [])
+	}, []) // eslint-disable-line
 
 	return (
 		<></>

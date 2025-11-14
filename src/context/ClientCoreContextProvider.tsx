@@ -1,16 +1,13 @@
-import React, { useContext, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
+import { EncryptJWT, importJWK } from 'jose';
+import React, { useMemo } from 'react';
+import { useDispatch } from 'react-redux';
 import ClientCoreContext from './ClientCoreContext';
 import { Core, PresentationRequest, PresentationResponse } from '@wwwallet-private/client-core';
-import { AppDispatch, AppState, signJwtPresentation } from '@/store';
+import { AppDispatch, signJwtPresentation } from '@/store';
 import { useCoreHttpProxy } from '@/lib/services/CoreWrappers/CoreHttpProxy';
 import { CORE_CONFIGURATION } from '@/config';
 import { useCoreClientStateStore } from '@/lib/services/CoreWrappers/ClientStateStore';
-import axios from 'axios';
-import {EncryptJWT, importJWK} from 'jose';
-import {useLocalStorageKeystore} from '@/services/LocalStorageKeystore';
-import keystoreEvents from '@/services/keystoreEvents';
-import SessionContext from './SessionContext';
 
 type ClientCoreContextProviderProps = {
 	children: React.ReactNode;
@@ -45,8 +42,6 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
 	const dispatch = useDispatch() as AppDispatch;
 	const httpClient = useCoreHttpProxy();
 	const clientStateStore = useCoreClientStateStore();
-	// const { keystore } = useContext(SessionContext)
-	// const { signJwtPresentation } = keystore
 
 	const vpTokenSigner = useMemo(() => ({
 		sign: async (payload: unknown, presentation_request: PresentationRequest) => {
@@ -81,7 +76,7 @@ export const ClientCoreContextProvider = ({ children }: ClientCoreContextProvide
 				})
 				.encrypt(publicKey);
 		},
-	}), [])
+	}), [dispatch])
 
 	const core = useMemo(() => {
 		return new Core({

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useContext, useRef, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState, setVcEntityList, store } from '@/store';
+import { AppState, setVcEntityList } from '@/store';
 import { useApi } from '@/api';
 import StatusContext from './StatusContext';
 import SessionContext from './SessionContext';
@@ -185,7 +185,7 @@ export const CredentialsContextProvider = ({ children }) => {
 		// Sorting by id
 		filteredVcEntityList.reverse();
 		return filteredVcEntityList;
-	}, [httpProxy, helper, calculatedWalletState, parseCredential, credentialEngine]);
+	}, [calculatedWalletState, parseCredential, credentialEngine]);
 
 
 	const getData = useCallback(async () => {
@@ -213,7 +213,7 @@ export const CredentialsContextProvider = ({ children }) => {
 		} catch (error) {
 			logger.error('Failed to fetch data', error);
 		}
-	}, [fetchVcData, setVcEntityList]);
+	}, [dispatch, fetchVcData]);
 
 	useEffect(() => {
 		if (!calculatedWalletState || !credentialEngine || !isLoggedIn) {

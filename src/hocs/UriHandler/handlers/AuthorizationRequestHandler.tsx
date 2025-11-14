@@ -16,7 +16,6 @@ export const AuthorizationRequestHandler = ({ goToStep, data }: AuthorizationReq
 
 	const {
 		issuer,
-		credential_configuration_ids: credentialConfigurationIds,
 		issuer_state
 	} = data
 	const core = useClientCore();
@@ -42,7 +41,7 @@ export const AuthorizationRequestHandler = ({ goToStep, data }: AuthorizationReq
 
 			throw err;
 		})
-	}, [core, displayError, t])
+	}, [core, goToStep, displayError, t, issuer, issuer_state])
 
 	return (
 		<></>

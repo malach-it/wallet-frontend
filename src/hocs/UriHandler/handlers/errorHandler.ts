@@ -9,7 +9,7 @@ export type ErrorHandlerFactoryConfig = {
 export function errorHandlerFactory(config: ErrorHandlerFactoryConfig): HandlerFactoryResponse {
 	const { url, isLoggedIn, displayError } = config;
 
-	return async function errorHandler({}) {
+	return async function errorHandler() {
 		const urlParams = new URLSearchParams(window.location.search);
 		const state = urlParams.get('state');
 		const error = urlParams.get('error');

@@ -101,7 +101,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			window.removeEventListener('online', () => updateOnlineStatus());
 			window.removeEventListener('offline', () => updateOnlineStatus());
 		};
-	}, []);
+	}, []); // eslint-disable-line
 
 	useEffect(() => {
 		logger.debug('Online status:', isOnline);
@@ -127,7 +127,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 				clearInterval(pollingInterval);
 			}
 		};
-	}, [isOnline]);
+	}, [isOnline]); // eslint-disable-line
 
 	// Polling logic when online
 	useEffect(() => {
@@ -171,7 +171,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			stopPolling();
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
-	}, [isOnline]);
+	}, [isOnline]); // eslint-disable-line
 
 	useEffect(() => {
 		// beforeinstallprompt is triggered if browser can install pwa
@@ -198,7 +198,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			window.removeEventListener("appinstalled", handleAppInstalled);
 			window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 		};
-	}, []);
+	}, [dispatch]);
 
 	navigator.serviceWorker.addEventListener('message', (event) => {
 		if (event.data && event.data.type === 'NEW_CONTENT_AVAILABLE') {
@@ -218,7 +218,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 
 	useEffect(() => {
 		updateOnlineStatus();
-	}, []);
+	}, []); // eslint-disable-line
 	return (
 		<StatusContext.Provider value={{ isOnline, updateAvailable, connectivity, updateOnlineStatus, pwaInstallable, dismissPwaPrompt, hidePwaPrompt }}>
 			{children}

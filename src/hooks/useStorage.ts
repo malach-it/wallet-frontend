@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useCallback, useEffect } from 'react';
 import { jsonParseTaggedBinary, jsonStringifyTaggedBinary } from '../util';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState, setStorageValue } from '@/store';
@@ -34,7 +34,7 @@ function makeUseStorage<T>(
 				}
 				return initialValue;
 			},
-			[],
+			[name, initialValue],
 		);
 
 		const currentValue = useSelector(createSelector(
@@ -65,7 +65,7 @@ function makeUseStorage<T>(
 					})
 				);
 			},
-			[name],
+			[name], // eslint-disable-line
 		);
 
 		const clearValue = useCallback(
@@ -85,7 +85,7 @@ function makeUseStorage<T>(
 					})
 				);
 			},
-			[name],
+			[name], // eslint-disable-line
 		);
 
 		useEffect(
@@ -111,7 +111,7 @@ function makeUseStorage<T>(
 					window.removeEventListener('storage', listener);
 				};
 			},
-			[name]
+			[dispatch, name]
 		);
 
 		useEffect(
@@ -129,7 +129,7 @@ function makeUseStorage<T>(
 					window.removeEventListener('useStorage.set', listener);
 				};
 			},
-			[name],
+			[dispatch, name],
 		);
 
 		return [currentValue, updateValue, clearValue];
