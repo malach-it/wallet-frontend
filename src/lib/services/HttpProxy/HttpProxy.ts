@@ -2,6 +2,7 @@ import { useContext, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { IHttpProxy, RequestHeaders, ResponseHeaders } from '../../interfaces/IHttpProxy';
+import { BACKEND_URL } from '@/config';
 import { AppState } from '@/store';
 import { addItem, getItem, removeItem } from '@/indexedDB';
 import { encryptedHttpRequest, toArrayBuffer } from '@/lib/utils/ohttpHelpers';
@@ -10,7 +11,7 @@ import SessionContext from '@/context/SessionContext';
 import { toU8 } from '@/util';
 
 // @ts-ignore
-const walletBackendServerUrl = import.meta.env.VITE_WALLET_BACKEND_URL;
+const walletBackendServerUrl = BACKEND_URL;
 const inFlightRequests = new Map<string, Promise<any>>();
 const TIMEOUT = 100 * 1000;
 

@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { useSelector } from "react-redux";
 import { OauthError } from "@wwwallet-private/client-core";
 import { jsonToLog, logger } from "@/logger";
+import { AppState } from "@/store";
 import { ProtocolData, ProtocolStep } from "./resources";
-
-import SessionContext from "../../context/SessionContext";
 
 import { useTranslation } from "react-i18next";
 import useClientCore from "@/hooks/useClientCore";
@@ -17,7 +17,6 @@ import {
 	PresentationSuccessHandler,
 	ProtocolErrorHandler
 } from "./handlers";
-import StatusContext from "@/context/StatusContext";
 
 type UriHandlerProps = {
 	children: React.ReactNode;
@@ -30,13 +29,17 @@ export const UriHandler = (props: UriHandlerProps) => {
 	const [ protocolData, setProtocolData ] = useState<ProtocolData>(null);
 
 	const core = useClientCore();
-	const { isOnline } = useContext(StatusContext);
-	const { isLoggedIn } = useContext(SessionContext);
+	const isOnline = useSelector((state: AppState) => {
+		return state.status.isOnline
+	})
+	const isLoggedIn = useSelector((state: AppState) => {
+		return state.sessions.isLoggedIn
+	})
 	const { displayError } = useErrorDialog();
 	const { t } = useTranslation();
 
 	useEffect(() => {
-		if (!isOnline || !isLoggedIn) return
+		if (currentStep || !isOnline || !isLoggedIn) return
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
@@ -87,10 +90,10 @@ export const UriHandler = (props: UriHandlerProps) => {
 		return currentStep === "protocol_error"
 	}, [currentStep])
 
-	const goToStep = useCallback((step: ProtocolStep, data: ProtocolData) => {
+	const goToStep = (step: ProtocolStep, data: ProtocolData) => {
 		setStep(step)
 		setProtocolData(data)
-	}, [])
+	}
 
 	return (
 		<>

@@ -10,6 +10,7 @@ type State = {
 	privateData: EncryptedContainer | null;
 	calculatedWalletState: WalletState | null;
 	api: BackendApi | null;
+	isLoggedIn: boolean | null;
 	storage: {
 		"Local storage": {
 			currentValue: Record<string, unknown>;
@@ -36,6 +37,7 @@ export const sessionsSlice = createSlice({
 			},
 		},
 		api: null,
+		isLoggedIn: null,
 		vcEntityList: null,
 	},
 	reducers: {
@@ -57,6 +59,9 @@ export const sessionsSlice = createSlice({
 		setApi: (state: State, { payload }: { payload: BackendApi }) => {
 			state.api = payload
 		},
+		setLoggedIn: (state: State, { payload }: { payload: boolean }) => {
+			state.isLoggedIn = payload
+		},
 		setVcEntityList: (state: State, { payload }: { payload: ExtendedVcEntity[] }) => {
 			const current = state.vcEntityList || []
 			const newList = payload.filter(vcEntity => {
@@ -77,6 +82,7 @@ export const {
 	setCalculatedWalletState,
 	setStorageValue,
 	setApi,
+	setLoggedIn,
 	setVcEntityList,
 } = sessionsSlice.actions;
 export default sessionsSlice.reducer;

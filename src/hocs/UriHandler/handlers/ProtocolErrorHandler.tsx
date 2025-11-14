@@ -1,9 +1,7 @@
-import React, { useContext } from "react";
+import React, { useEffect } from "react";
 import { ProtocolData, ProtocolStep } from "../resources";
 
-import SessionContext from "@/context/SessionContext";
-
-import useErrorDialog from "@/hooks/useErrorDialog";
+import MessagePopup from "@/components/Popups/MessagePopup";
 
 export type ProtocolErrorHandlerProps = {
 	goToStep: (step: ProtocolStep, data: ProtocolData) => void;
@@ -11,20 +9,21 @@ export type ProtocolErrorHandlerProps = {
 }
 
 export const ProtocolErrorHandler = ({ goToStep, data }) => {
-	const { isLoggedIn } = useContext(SessionContext);
-	const { displayError } = useErrorDialog();
+	const { error, error_description } = data
 
-	const urlParams = new URLSearchParams(window.location.search);
-	const state = urlParams.get('state');
-	const error = urlParams.get('error');
+	// TODO verify authorization response state
+	// const state = urlParams.get('state');
 
-	if (isLoggedIn && state && error) {
+	useEffect(() => {
 		window.history.replaceState({}, '', `${window.location.pathname}`);
-		const errorDescription = urlParams.get('error_description');
-		displayError({ title: error, description: errorDescription })
-	}
+	}, [])
 
 	return (
-		<></>
+		<>
+			<MessagePopup type="error" onClose={() => {}} message={{
+				title: error,
+				description: error_description,
+			}} />
+		</>
 	)
 }
