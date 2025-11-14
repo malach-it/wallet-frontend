@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import { BACKEND_URL } from '../config';
+import { logger } from '@/logger';
 import StatusContext, { Connectivity } from './StatusContext';
 import { useLocalStorage } from '@/hooks/useStorage';
+import { AppState, setOffline, setOnline, setPwaInstallable, setPwaNotInstallable } from '@/store';
 
 // Function to calculate speed based on RTT (lower RTT means higher speed)
 function calculateNetworkSpeed(rtt: number): number {
@@ -37,14 +40,15 @@ function getNavigatorOnlineStatus(): boolean {
 }
 
 export const StatusContextProvider = ({ children }: { children: React.ReactNode }) => {
-	const [isOnline, setIsOnline] = useState<boolean | null>(null);
+	const dispatch = useDispatch();
+	const isOnline = useSelector((state: AppState) => state.status.isOnline)
+	const pwaInstallable = useSelector((state: AppState) => state.status.pwaInstallable)
 	const [updateAvailable, setUpdateAvailable] = useState(false);
 	const [connectivity, setConnectivity] = useState<Connectivity>({
 		navigatorOnline: null,
 		Internet: null,
 		speed: null,
 	});
-	const [pwaInstallable, setPwaInstallable] = useState(null);
 	const [hidePwaPrompt, setHidePwaPrompt] = useLocalStorage<boolean>("hidePwaPrompt", false);
 
 	const lastUpdateCallTime = React.useRef<number>(0);
@@ -80,12 +84,11 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			};
 		});
 
-		setIsOnline((prev) => {
-			if (prev === internetConnection.isConnected) {
-				return prev; // No change in `isOnline`
-			}
-			return internetConnection.isConnected;
-		});
+		if (internetConnection.isConnected) {
+			dispatch(setOnline());
+		} else {
+			dispatch(setOffline());
+		}
 	}
 
 	useEffect(() => {
@@ -98,10 +101,10 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			window.removeEventListener('online', () => updateOnlineStatus());
 			window.removeEventListener('offline', () => updateOnlineStatus());
 		};
-	}, []);
+	}, []); // eslint-disable-line
 
 	useEffect(() => {
-		console.log('Online status:', isOnline);
+		logger.debug('Online status:', isOnline);
 	}, [isOnline]);
 
 	// Polling logic when offline
@@ -124,7 +127,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 				clearInterval(pollingInterval);
 			}
 		};
-	}, [isOnline]);
+	}, [isOnline]); // eslint-disable-line
 
 	// Polling logic when online
 	useEffect(() => {
@@ -168,20 +171,24 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			stopPolling();
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
-	}, [isOnline]);
+	}, [isOnline]); // eslint-disable-line
 
 	useEffect(() => {
 		// beforeinstallprompt is triggered if browser can install pwa
 		// it will not trigger if pwa is already installed
 		const handleBeforeInstallPrompt = (event) => {
 			event.preventDefault();
-			setPwaInstallable(event);
+			if (event) {
+				dispatch(setPwaInstallable());
+			} else {
+				dispatch(setPwaNotInstallable());
+			}
 		};
 
 		// appinstaled is triggered if pwa was installed
 		// we want to remove installation prompts in that case
 		const handleAppInstalled = () => {
-			setPwaInstallable(null);
+			dispatch(setPwaNotInstallable());
 		};
 
 		window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -191,7 +198,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 			window.removeEventListener("appinstalled", handleAppInstalled);
 			window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 		};
-	}, []);
+	}, [dispatch]);
 
 	navigator.serviceWorker.addEventListener('message', (event) => {
 		if (event.data && event.data.type === 'NEW_CONTENT_AVAILABLE') {
@@ -211,7 +218,7 @@ export const StatusContextProvider = ({ children }: { children: React.ReactNode 
 
 	useEffect(() => {
 		updateOnlineStatus();
-	}, []);
+	}, []); // eslint-disable-line
 	return (
 		<StatusContext.Provider value={{ isOnline, updateAvailable, connectivity, updateOnlineStatus, pwaInstallable, dismissPwaPrompt, hidePwaPrompt }}>
 			{children}

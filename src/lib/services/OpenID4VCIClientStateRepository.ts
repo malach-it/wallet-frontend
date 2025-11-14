@@ -1,4 +1,5 @@
 import { useContext, useCallback, useMemo, useRef, useEffect, useState } from "react";
+import { logger } from "@/logger";
 import SessionContext from "@/context/SessionContext";
 import { CurrentSchema } from "@/services/WalletStateSchema";
 import { WalletStateUtils } from "@/services/WalletStateUtils";
@@ -59,7 +60,7 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 			return;
 		}
 		const rememberIssuerForSeconds = await getRememberIssuerAge();
-		console.log("Rememeber issuer for seconds = ", rememberIssuerForSeconds)
+		logger.debug("Rememeber issuer for seconds = ", rememberIssuerForSeconds)
 
 		if (rememberIssuerForSeconds == null) {
 			return;
@@ -93,7 +94,7 @@ export function useOpenID4VCIClientStateRepository(): IOpenID4VCIClientStateRepo
 		const [, newPrivateData, keystoreCommit] = await saveCredentialIssuanceSessions(Array.from(sessions.current.values()), deletedSessions);
 		await api.updatePrivateData(newPrivateData);
 		await keystoreCommit();
-		console.log("CHANGES WRITTEN")
+		logger.debug("CHANGES WRITTEN")
 	}, [getCalculatedWalletState, saveCredentialIssuanceSessions, api, cleanupExpired]);
 
 

@@ -8,6 +8,7 @@ import Modal from 'react-modal';
 import './index.css';
 import { BrowserRouter } from "react-router-dom";
 import AppProvider from './AppProvider';
+import { logger } from './logger';
 
 // Set root element for react-modal
 Modal.setAppElement('#root');
@@ -16,8 +17,8 @@ ConsoleBehavior();
 
 // Initialize IndexedDB BEFORE React renders
 initializeDataSource()
-	.then(() => console.log('Database initialized'))
-	.catch((err) => console.error('Error initializing database', err));
+	.then(() => logger.debug('Database initialized'))
+	.catch((err) => logger.error('Error initializing database', err));
 
 // Create root and render app
 const root = createRoot(document.getElementById('root'));
