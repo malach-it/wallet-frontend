@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from "react";
-import { calculateJwkThumbprint, decodeJwt, JWK } from "jose";
+import { calculateJwkThumbprint, decodeJwt, exportJWK, generateKeyPair, JWK, SignJWT } from "jose";
 import { OauthError } from "@wwwallet-private/client-core";
 import { OPENID4VCI_PROOF_TYPE_PRECEDENCE } from "@/config";
 import { logger, jsonToLog } from "@/logger";
@@ -78,39 +78,35 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 					}
 				).filter(proofType => proofType)
 
-				const proofs: {
-					jwt?: string[];
-					attestation?: string[];
-				}= {}
+				const proofs = await Promise.all(
+					proofTypes.map(async (proofType) => {
+						const proofKey = await generateKeyPair("ES256", { extractable: true });
 
-				if (proofTypes.filter(proofType => proofType === 'jwt').length) {
-					const [{ proof_jwts }, , ] = await keystore.generateOpenid4vciProofs(
-						proofTypes.filter(proofType => proofType === 'jwt').map(() => {
+						if (proofType === "jwt") {
 							return {
-								nonce: c_nonce,
-								audience,
-								issuer,
+								proofKey: {
+									alg: "ES256",
+									...proofKey,
+								},
+								proof: await new SignJWT({ nonce: c_nonce, aud: audience, iss: issuer })
+									.setProtectedHeader({ alg: "ES256", jwk: await exportJWK(proofKey.publicKey) })
+									.sign(proofKey.privateKey)
 							}
-						})
-					)
+						}
 
-					// TODO commit jwt proof
-					proofs.jwt = proof_jwts
-				}
-
-				if (proofTypes.filter(proofType => proofType === 'attestation').length) {
-					const [{ keypairs }, , ] = await keystore.generateKeypairs(
-						proofTypes.filter(proofType => proofType === 'attestation').length
-					);
-
-					const proof_attestation = await requestKeyAttestation(
-						keypairs.map(({ publicKey }) => publicKey),
-							c_nonce
-					).then(({ key_attestation }) => key_attestation)
-
-					// TODO commit attestation proof
-					proofs.attestation = [proof_attestation]
-				}
+						if (proofType === "attestation") {
+							return {
+								proofKey: {
+									alg: "ES256",
+									...proofKey,
+								},
+								proof: await requestKeyAttestation(
+									[proofKey.publicKey],
+									c_nonce
+								).then(({ key_attestation }) => key_attestation)
+							}
+						}
+					}))
 
 				const credentials = await Promise.all(
 					credential_configuration_ids.map(async (credential_configuration_id: string, index: number) => {
@@ -119,7 +115,14 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 							access_token,
 							state,
 							credential_configuration_id,
-							proofs,
+							proofs: {
+								jwt: proofTypes
+									.filter(proofType => proofType === "jwt")
+									.map((_proofType, index) => proofs[index].proof),
+								attestation: proofTypes
+									.filter(proofType => proofType === "attestation")
+									.map((_proofType, index) => proofs[index].proof),
+							}
 						})
 
 						return [credential_configuration_id, credentials]
@@ -150,7 +153,8 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 									instanceId: index,
 								}
 							})
-						}))
+						})),
+						proofs.map(({ proofKey }) => proofKey)
 				)
 
 				await api.updatePrivateData(credentialsData);

@@ -2,7 +2,6 @@ import React, { useContext, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { DcqlQuery } from "dcql";
-import { SDJwt } from "@sd-jwt/core";
 import { present } from "@sd-jwt/present";
 import { jsonToLog, logger } from "@/logger";
 import { AppState } from "@/store";
@@ -120,7 +119,6 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 				putIn(presentFrame, claim.path, true)
 			})
 			const disclosedCredentials = await Promise.all(credentials.map(async vcEntity => {
-				const sdjwt = await SDJwt.fromEncode(vcEntity.data, hasher)
 				return {
 					vcEntity,
 					credential: await present(vcEntity.data, presentFrame, hasher)

@@ -1,5 +1,9 @@
 import { configureStore, createAsyncThunk } from '@reduxjs/toolkit';
-import { importMainKey, openPrivateData, signJwtPresentation as keystoreSignJwtPresentation } from "@/services/keystore";
+import {
+	importMainKey,
+	openPrivateData,
+	signJwtPresentation as keystoreSignJwtPresentation,
+} from "@/services/keystore";
 import { jsonParseTaggedBinary } from '@/util';
 
 import statusReducer from "./statusSlice";
