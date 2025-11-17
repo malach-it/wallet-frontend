@@ -69,6 +69,7 @@
 					"presentation_success": "You have presented a credential. The verifier informs that the process was successful.",
 					"protocol_error": "The issuer or verifier encountered an error while issuing or presenting credentials."
 				},
+				"invalid_query": "The credential request from the verifier is invalid or malformed.",
 				"invalid_location": "The location you are being navigating to is invalid or malformed. Please contact your administrator for more information.",
 				"invalid_request": "Your wallet has performed a request to the issuer that could not be successful. Please contact your administrator for more information",
 				"invalid_issuer": "The given issuer information does not allow to perform the request. Please contact your administrator for more information.",
