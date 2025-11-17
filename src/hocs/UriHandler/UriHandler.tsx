@@ -65,7 +65,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 	}, [])
 
 	useEffect(() => {
-		if (!isOnline || !isLoggedIn) return
+		if (currentStep || !isOnline || !isLoggedIn) return
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
@@ -90,7 +90,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 			}
 			else logger.error(err);
 		})
-	}, [goToStep, isOnline, isLoggedIn, core, displayError, t])
+	}, [currentStep, goToStep, isOnline, isLoggedIn, core, displayError, t])
 
 	return (
 		<>
