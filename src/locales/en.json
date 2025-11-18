@@ -57,6 +57,7 @@
 	"errors": {
 		"invalid_location": "Invalid location",
 		"invalid_request": "Invalid request",
+		"invalid_query": "Invalid query",
 		"invalid_issuer": "Invalid issuer",
 		"invalid_client": "Invalid client",
 		"invalid_parameters": "Invalid parameters",
@@ -112,6 +113,7 @@
 				},
 				"invalid_request": "Your wallet has performed a request to the verifier that could not be successful. Please contact your administrator for more information.",
 				"invalid_client": "Your wallet has encountered an error. Please contact your administrator for more information.",
+				"invalid_query": "The credential request from the verifier is invalid or malformed.",
 				"no_credential_match": "Your wallet does not contain any credentials matching the presentation request."
 			},
 			"send_presentation": {
