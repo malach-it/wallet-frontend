@@ -25,6 +25,39 @@ type GeneratePresentationHandlerProps = {
 	data: any
 }
 
+
+function getIn(object: unknown, path: Array<string>): boolean {
+	if (!path.length) return false
+		const currentPath = [...path]
+
+	const current = currentPath.shift()
+
+	if (!currentPath.length) return !!object[current]
+
+		return Object.keys(object).some(key => {
+			if (key === current) {
+				return getIn(object[key], currentPath)
+			}
+			return false
+		})
+}
+
+function putIn(object: unknown, path: Array<string>, value: unknown): unknown {
+	if (!path.length) return object
+		const currentPath = [...path]
+
+	const current = currentPath.shift()
+
+	if (!currentPath.length) {
+		object[current] = value
+		return object
+	}
+
+	object[current] = putIn(object[current] || {}, currentPath, value)
+
+	return object
+}
+
 export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: GeneratePresentationHandlerProps) => {
 	const { presentation_request, dcql_query } = data;
 	const { t } = useTranslation();
@@ -41,40 +74,16 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 		})
 	}
 
-	function getIn(object: unknown, path: Array<string>): boolean {
-		if (!path.length) return false
-		const currentPath = [...path]
-
-		const current = currentPath.shift()
-
-		if (!currentPath.length) return !!object[current]
-
-		return Object.keys(object).some(key => {
-			if (key === current) {
-				return getIn(object[key], currentPath)
-			}
-			return false
-		})
-	}
-
-	function putIn(object: unknown, path: Array<string>, value: unknown): unknown {
-		if (!path.length) return object
-		const currentPath = [...path]
-
-		const current = currentPath.shift()
-
-		if (!currentPath.length) {
-			object[current] = value
-			return object
-		}
-
-		object[current] = putIn(object[current] || {}, currentPath, value)
-
-		return object
-	}
-
 	useEffect(() => {
 		if (!vcEntityList) return
+
+		if (!dcql_query) {
+			return displayError({
+				title: t(`errors.invalid_query`),
+				emphasis: t(`errors.oid4vp.generate_presentation.description.send_presentation`),
+				description: t(`errors.oid4vp.generate_presentation.invalid_query`),
+			});
+		}
 
 		const credentials = vcEntityList.filter(vcEntity => {
 			return dcql_query.credentials.some(credentialDefinition => {
