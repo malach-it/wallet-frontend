@@ -76,12 +76,11 @@ export function useCoreClientStateStore(): ClientStateStore {
 		async (issuer, issuer_state): Promise<ClientState> => {
 				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
 
-				const clientStates = JSON.parse(rawClientStates).filter(
+				const clientState = JSON.parse(rawClientStates).find(
 					({ issuer: e, issuer_state: f }) => {
 						return e === issuer && f === (issuer_state || 'issuer_state')
 					}
 				)
-				const clientState = clientStates[clientStates.length - 1]
 
 				if (!clientState) {
 					throw new Error("could not find client state")

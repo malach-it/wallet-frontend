@@ -12,3 +12,4 @@ export type ProtocolStep =
 	| "presentation_success"
 	| "protocol_error"
 	| "credential_request"
+	| "error"

@@ -59,26 +59,28 @@ export const UriHandler = (props: UriHandlerProps) => {
 		return currentStep === "protocol_error"
 	}, [currentStep])
 
-	const goToStep = useCallback((step: ProtocolStep, data: ProtocolData) => {
+	const goToStep = useCallback((step: ProtocolStep, data?: ProtocolData) => {
 		setStep(step)
 		setProtocolData(data)
 	}, [])
 
 	useEffect(() => {
-		if (!isOnline || !isLoggedIn) return
+		if (currentStep || !isOnline || !isLoggedIn) return
 
 		core.location(window.location).then(presentationRequest => {
 			if (presentationRequest.protocol) {
-				window.history.replaceState(
-					{},
-					'',
-					`${window.location.pathname}?protocol=${presentationRequest.protocol}`,
-				);
+				// window.history.replaceState(
+				// 	{},
+				// 	'',
+				// 	`${window.location.pathname}?protocol=${presentationRequest.protocol}`,
+				// );
 
 				// @ts-expect-error
 				goToStep(presentationRequest.nextStep, presentationRequest.data)
 			}
 		}).catch(err => {
+			goToStep("error")
+
 			if (err instanceof OauthError) {
 				logger.error(t(`errors.${err.error}`), jsonToLog(err));
 				displayError({
@@ -90,7 +92,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 			}
 			else logger.error(err);
 		})
-	}, [goToStep, isOnline, isLoggedIn, core, displayError, t])
+	}, [currentStep, goToStep, isOnline, isLoggedIn, core, displayError, t])
 
 	return (
 		<>

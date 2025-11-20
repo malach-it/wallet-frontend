@@ -1,8 +1,9 @@
-import React, { useContext, useEffect } from "react";
-import { calculateJwkThumbprint, decodeJwt, JWK } from "jose";
+import React, { useCallback, useContext, useEffect } from "react";
+import { calculateJwkThumbprint, decodeJwt, exportJWK, generateKeyPair, JWK, SignJWT } from "jose";
 import { OauthError } from "@wwwallet-private/client-core";
-import { logger, jsonToLog } from "../../../logger";
-import { WalletStateUtils } from "../../../services/WalletStateUtils";
+import { OPENID4VCI_PROOF_TYPE_PRECEDENCE } from "@/config";
+import { logger, jsonToLog } from "@/logger";
+import { WalletStateUtils } from "@/services/WalletStateUtils";
 import { ProtocolData, ProtocolStep } from "../resources";
 
 import SessionContext from "@/context/SessionContext";
@@ -17,6 +18,8 @@ export type CredentialRequestProps = {
 	data: any
 }
 
+const configProofTypes = OPENID4VCI_PROOF_TYPE_PRECEDENCE.split(',') as string[];
+
 export const CredentialRequestHandler = ({ goToStep, data }) => {
 	const { displayError } = useErrorDialog();
 	const { api, keystore } = useContext(SessionContext);
@@ -24,6 +27,28 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 
 	const { t } = useTranslation();
 	const core = useClientCore();
+
+	const requestKeyAttestation = useCallback(async (jwks: JWK[], nonce: string) => {
+		try {
+			const response = await api.post("/wallet-provider/key-attestation/generate", {
+				jwks,
+				openid4vci: {
+					nonce: nonce,
+				}
+			});
+			const { key_attestation } = response.data;
+			if (!key_attestation || typeof key_attestation != 'string') {
+				logger.debug("Cannot parse key_attestation from wallet-backend-server");
+				return null;
+			}
+			return { key_attestation };
+		}
+		catch (err) {
+			logger.debug(err);
+			return null;
+		}
+	}, [api]);
+
 
 	useEffect(() => {
 		const {
@@ -41,20 +66,47 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 
 		(async () => {
 			try {
-				// TODO generate attestation proofs
-				const [{ proof_jwts }, , ] = await keystore.generateOpenid4vciProofs(
-					credential_configuration_ids.map(() => {
-						return {
-							nonce: c_nonce,
-							audience,
-							issuer,
-						}
-					})
-				)
+				const proofTypes = credential_configuration_ids.map(
+					(credential_configuration_id: string) => {
+						return configProofTypes.find(proofType => {
+							return Object.keys(
+								issuer_metadata
+									.credential_configurations_supported[credential_configuration_id]
+									?.proof_types_supported || {}
+							).includes(proofType)
+						})
+					}
+				).filter(proofType => proofType)
 
-				// TODO commit jwt proof
-				// await api.updatePrivateData(proofsData);
-				// await proofsCommit()
+				const proofs = await Promise.all(
+					proofTypes.map(async (proofType) => {
+						const proofKey = await generateKeyPair("ES256", { extractable: true });
+
+						if (proofType === "jwt") {
+							return {
+								proofKey: {
+									alg: "ES256",
+									...proofKey,
+								},
+								proof: await new SignJWT({ nonce: c_nonce, aud: audience, iss: issuer })
+									.setProtectedHeader({ alg: "ES256", jwk: await exportJWK(proofKey.publicKey) })
+									.sign(proofKey.privateKey)
+							}
+						}
+
+						if (proofType === "attestation") {
+							return {
+								proofKey: {
+									alg: "ES256",
+									...proofKey,
+								},
+								proof: await requestKeyAttestation(
+									[proofKey.publicKey],
+									c_nonce
+								).then(({ key_attestation }) => key_attestation)
+							}
+						}
+					}))
 
 				const credentials = await Promise.all(
 					credential_configuration_ids.map(async (credential_configuration_id: string, index: number) => {
@@ -64,8 +116,13 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 							state,
 							credential_configuration_id,
 							proofs: {
-								jwt: proof_jwts,
-							},
+								jwt: proofTypes
+									.filter(proofType => proofType === "jwt")
+									.map((_proofType, index) => proofs[index].proof),
+								attestation: proofTypes
+									.filter(proofType => proofType === "attestation")
+									.map((_proofType, index) => proofs[index].proof),
+							}
 						})
 
 						return [credential_configuration_id, credentials]
@@ -96,7 +153,8 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 									instanceId: index,
 								}
 							})
-						}))
+						})),
+						proofs.map(({ proofKey }) => proofKey)
 				)
 
 				await api.updatePrivateData(credentialsData);
