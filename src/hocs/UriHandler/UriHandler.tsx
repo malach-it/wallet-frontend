@@ -59,7 +59,7 @@ export const UriHandler = (props: UriHandlerProps) => {
 		return currentStep === "protocol_error"
 	}, [currentStep])
 
-	const goToStep = useCallback((step: ProtocolStep, data: ProtocolData) => {
+	const goToStep = useCallback((step: ProtocolStep, data?: ProtocolData) => {
 		setStep(step)
 		setProtocolData(data)
 	}, [])
@@ -79,8 +79,9 @@ export const UriHandler = (props: UriHandlerProps) => {
 				goToStep(presentationRequest.nextStep, presentationRequest.data)
 			}
 		}).catch(err => {
+			goToStep("error")
+
 			if (err instanceof OauthError) {
-				setStep("error")
 				logger.error(t(`errors.${err.error}`), jsonToLog(err));
 				displayError({
 					title: t(`errors.${err.error}`),

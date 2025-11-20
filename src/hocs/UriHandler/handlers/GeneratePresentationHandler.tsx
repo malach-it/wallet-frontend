@@ -58,7 +58,7 @@ function putIn(object: unknown, path: Array<string>, value: unknown): unknown {
 	return object
 }
 
-export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: GeneratePresentationHandlerProps) => {
+export const GeneratePresentationHandler = ({ goToStep, data }: GeneratePresentationHandlerProps) => {
 	const { presentation_request, dcql_query } = data;
 	const { t } = useTranslation();
 	const { openID4VP } = useContext(OpenID4VPContext);
@@ -78,6 +78,11 @@ export const GeneratePresentationHandler = ({ goToStep: _goToStep, data }: Gener
 		if (!vcEntityList) return
 
 		if (!dcql_query) {
+			goToStep("error")
+
+			const error = new OauthError("invalid_query", "dcql_query parameter is required")
+			logger.error(t(`errors.invalid_query`), jsonToLog(error));
+
 			return displayError({
 				title: t(`errors.invalid_query`),
 				emphasis: t(`errors.oid4vp.generate_presentation.description.send_presentation`),
