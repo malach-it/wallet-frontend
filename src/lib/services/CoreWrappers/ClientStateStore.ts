@@ -82,10 +82,6 @@ export function useCoreClientStateStore(): ClientStateStore {
 					}
 				)
 
-				if (!clientState) {
-					throw new Error("could not find client state")
-				}
-
 				return clientState;
 		},
 		[]
@@ -96,10 +92,6 @@ export function useCoreClientStateStore(): ClientStateStore {
 				const rawClientStates = localStorage.getItem(CLIENT_STATE_KEY) || '[]'
 
 				const clientState = JSON.parse(rawClientStates).find(({ state: e }) => e === state)
-
-				if (!clientState) {
-					throw new Error("could not find client state")
-				}
 
 				return clientState;
 			},
