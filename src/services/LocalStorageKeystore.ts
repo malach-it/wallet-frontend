@@ -1,3 +1,4 @@
+import { calculateJwkThumbprint, exportJWK, JWK } from "jose";
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
@@ -14,7 +15,7 @@ import * as keystore from "./keystore";
 import type { AsymmetricEncryptedContainer, AsymmetricEncryptedContainerKeys, EncryptedContainer, OpenedContainer, PrivateData, UnlockSuccess, WebauthnPrfEncryptionKeyInfo, WebauthnPrfSaltInfo, WrappedKeyInfo } from "./keystore";
 import { MDoc } from "@auth0/mdl";
 import { WalletStateUtils } from "./WalletStateUtils";
-import { addAlterSettingsEvent, addDeleteCredentialEvent, addDeleteCredentialIssuanceSessionEvent, addDeleteKeypairEvent, addNewCredentialEvent, addNewPresentationEvent, addSaveCredentialIssuanceSessionEvent, CurrentSchema, foldOldEventsIntoBaseState } from "./WalletStateSchema";
+import { addAlterSettingsEvent, addDeleteCredentialEvent, addDeleteCredentialIssuanceSessionEvent, addDeleteKeypairEvent, addNewCredentialEvent, addNewKeypairEvent, addNewPresentationEvent, addSaveCredentialIssuanceSessionEvent, CurrentSchema, foldOldEventsIntoBaseState } from "./WalletStateSchema";
 
 type WalletState = CurrentSchema.WalletState;
 type WalletStateCredential = CurrentSchema.WalletStateCredential;
@@ -640,16 +641,34 @@ export function useLocalStorageKeystore(eventTarget: EventTarget): LocalStorageK
 		return (calculatedWalletState);
 	}, [calculatedWalletState]);
 
-	const addCredentials = useCallback(async (credentials: { data: string, format: string, kid: string, batchId: number, credentialIssuerIdentifier: string, credentialConfigurationId: string, instanceId: number, credentialId?: number, }[]): Promise<[
+	const addCredentials = useCallback(async (credentials: { data: string, format: string, kid: string, batchId: number, credentialIssuerIdentifier: string, credentialConfigurationId: string, instanceId: number, credentialId?: number}[], proofs: any[]): Promise<[
 		{},
 		AsymmetricEncryptedContainer,
 		CommitCallback,
 	]> => {
+		const deriveKid = async (publicKey: CryptoKey) => {
+			const pubKey = await crypto.subtle.exportKey("jwk", publicKey);
+			const jwkThumbprint = await calculateJwkThumbprint(pubKey as JWK, "sha256");
+			return jwkThumbprint;
+		};
+
 		let [walletStateContainer, ,] = await openPrivateData();
 		walletStateContainer = await foldOldEventsIntoBaseState(walletStateContainer);
 
 		for (const { data, format, batchId, credentialIssuerIdentifier, kid, credentialConfigurationId, instanceId, credentialId } of credentials) {
 			walletStateContainer = await addNewCredentialEvent(walletStateContainer, data, format, kid, batchId, credentialIssuerIdentifier, credentialConfigurationId, instanceId, credentialId);
+		}
+
+		for (const keypair of proofs) {
+			walletStateContainer = await addNewKeypairEvent(
+				walletStateContainer,
+				await deriveKid(keypair.publicKey),
+				{
+					alg: keypair.alg,
+					publicKey: await exportJWK(keypair.publicKey),
+					privateKey: await exportJWK(keypair.privateKey),
+				} as keystore.CredentialKeyPair
+			)
 		}
 
 		return editPrivateData(async (originalContainer) => {
