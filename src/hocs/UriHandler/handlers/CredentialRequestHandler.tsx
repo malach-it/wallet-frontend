@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { calculateJwkThumbprint, decodeJwt, exportJWK, generateKeyPair, JWK, SignJWT } from "jose";
 import { OauthError } from "@wwwallet/client-core";
 import { OPENID4VCI_PROOF_TYPE_PRECEDENCE } from "@/config";
@@ -47,8 +47,8 @@ export const CredentialRequestHandler = ({ goToStep, data }) => {
 			logger.debug(err);
 			return null;
 		}
-	}, [api]);
-
+	}, [api]
+	);
 
 	useEffect(() => {
 		const {

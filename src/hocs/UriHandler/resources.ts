@@ -7,6 +7,7 @@ export type ProtocolData = ProtocolResponse['data']
 export type ProtocolStep =
 	| "authorization_request"
 	| "authorize"
+	| "authorization_challenge"
 	| "generate_presentation"
 	| "send_presentation"
 	| "presentation_success"

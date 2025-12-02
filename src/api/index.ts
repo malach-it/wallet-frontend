@@ -1,8 +1,10 @@
 import axios, { AxiosResponse } from 'axios';
 import { Err, Ok, Result } from 'ts-results';
+import { useDispatch } from 'react-redux';
 
 import * as config from '../config';
 import { logger } from '@/logger';
+import { setLoggedIn } from '@/store';
 import { fromBase64Url, jsonParseTaggedBinary, jsonStringifyTaggedBinary, toBase64Url } from '../util';
 import { EncryptedContainer, makeAssertionPrfExtensionInputs, parsePrivateData, serializePrivateData } from '../services/keystore';
 import { CachedUser, LocalStorageKeystore } from '../services/LocalStorageKeystore';
@@ -98,6 +100,7 @@ export interface BackendApi {
 }
 
 export function useApi(isOnlineProp: boolean = true): BackendApi {
+	const dispatch = useDispatch();
 	const isOnline = useMemo(() => isOnlineProp === null ? true : isOnlineProp, [isOnlineProp]);
 	const [appToken, setAppToken, clearAppToken] = useSessionStorage<string | null>("appToken", null);
 	const [userHandle,] = useSessionStorage<string | null>("userHandle", null);
@@ -326,6 +329,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 
 	const clearSession = useCallback((): void => {
 		clearSessionStorage();
+		dispatch(setLoggedIn(false));
 		events.dispatchEvent(new CustomEvent<ClearSessionEvent>(CLEAR_SESSION_EVENT));
 	}, [clearSessionStorage]);
 
@@ -343,6 +347,7 @@ export function useApi(isOnlineProp: boolean = true): BackendApi {
 			authenticationType,
 			showWelcome: authenticationType === 'signup',
 		});
+		dispatch(setLoggedIn(true));
 
 		await addItem('users', response.data.uuid, response.data);
 		if (isOnline) {
