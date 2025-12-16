@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useContext, useRef, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState, setVcEntityList } from '@/store';
+import { AppDispatch, AppState } from '@/store';
+import { buildWalletState, fetchEvents } from '@/store/EventStore';
 import { useApi } from '@/api';
 import StatusContext from './StatusContext';
 import SessionContext from './SessionContext';
@@ -18,7 +19,7 @@ type WalletStateCredential = CurrentSchema.WalletStateCredential;
 
 
 export const CredentialsContextProvider = ({ children }) => {
-	const dispatch = useDispatch();
+	const dispatch = useDispatch() as AppDispatch;
 	const { isOnline } = useContext(StatusContext);
 	const api = useApi(isOnline);
 	const { isLoggedIn } = useContext(SessionContext);
@@ -77,7 +78,6 @@ export const CredentialsContextProvider = ({ children }) => {
 		}
 		prevIsLoggedIn.current = isLoggedIn;
 	}, [isLoggedIn, httpProxy, helper, initializeEngine]);
-
 
 	const parseCredential = useCallback(async (vcEntity: WalletStateCredential): Promise<ParsedCredential | null> => {
 		const engine = credentialEngine;
@@ -197,7 +197,7 @@ export const CredentialsContextProvider = ({ children }) => {
 					setLatestCredentials(new Set());
 				}, 2000);
 			}
-			dispatch(setVcEntityList(storedCredentials));
+			// dispatch(setVcEntityList(storedCredentials));
 // 			setVcEntityList((prev) => {
 // 				if (
 // 					!prev ||
@@ -213,7 +213,16 @@ export const CredentialsContextProvider = ({ children }) => {
 		} catch (error) {
 			logger.error('Failed to fetch data', error);
 		}
-	}, [dispatch, fetchVcData]);
+	}, [fetchVcData]);
+
+	useEffect(() => {
+		if (!credentialEngine) return
+
+		dispatch(fetchEvents()).then(() => {
+			dispatch(buildWalletState({ credentialEngine }))
+		})
+	}, [dispatch, credentialEngine])
+
 
 	useEffect(() => {
 		if (!calculatedWalletState || !credentialEngine || !isLoggedIn) {
@@ -232,7 +241,7 @@ export const CredentialsContextProvider = ({ children }) => {
 		setCurrentSlide,
 		parseCredential,
 		credentialEngine,
-		pendingTransactions
+		pendingTransactions,
 	}), [
 		vcEntityList,
 		latestCredentials,
@@ -242,8 +251,8 @@ export const CredentialsContextProvider = ({ children }) => {
 		setCurrentSlide,
 		parseCredential,
 		credentialEngine,
-		pendingTransactions
-	])
+		pendingTransactions,
+	]);
 
 	if (isLoggedIn && !credentialEngine) {
 		return (

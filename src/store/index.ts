@@ -19,8 +19,10 @@ export const store = configureStore({
 			serializableCheck: {
 				ignoredActionPaths: [
 					'payload',
+					'meta.arg.credentialEngine',
 				],
 				ignoredPaths: [
+					'sessions.eventStore',
 					'sessions.keystore',
 					'sessions.storage',
 					'sessions.privateData',
@@ -73,6 +75,7 @@ export {
 	setStorageValue,
 	setApi,
 	setVcEntityList,
+	setKeypairs,
 } from "./sessionsSlice";
 
 export type AppState = ReturnType<typeof store.getState>
